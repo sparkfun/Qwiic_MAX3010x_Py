@@ -1,0 +1,610 @@
+#----------------------------------------------------------------------------------
+# qwiic_max3010x.py
+#
+# Python library for the MAX3010x Particle Sensor
+#
+#----------------------------------------------------------------------------------
+#
+# Written by  SparkFun Electronics, May 2020
+# Original Arduino Library written by Peter Jansen and Nathan Seidle (SparkFun)
+# BSD license, all atribution text must be included in any redistribution.
+# 
+# These sensors use I2C to communicate, as well as a single (optional)
+# interrupt line that is not currently supported in this driver.
+#
+# This python library supports the SparkFun Electroncis qwiic
+# qwiic sensor/board ecosystem
+#
+# More information on qwiic is at https:// www.sparkfun.com/qwiic
+#
+# Do you like this library? Help support SparkFun. Buy a board!
+#
+# This sensor can easily protyped using the following:
+# SparkFun Particle Sensor Breakout - MAX30101 (Qwiic)
+# https://www.sparkfun.com/products/16474
+# 
+#==================================================================================
+# Copyright (c) 2020 SparkFun Electronics
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#==================================================================================
+#
+# This is mostly a port of existing Arduino functionaly, so pylint is sad.
+# The goal is to keep the public interface pthonic, but internal is internal
+#
+# pylint: disable=line-too-long, too-many-public-methods, invalid-name
+#
+
+"""
+qwiic_max3010x
+============
+Python module for the MAX3010x sensor as found on the [SparkFun Particle Sensor Breakout - MAX30101 (Qwiic)](https://www.sparkfun.com/products/16474)
+
+This python package is a port of the existing [SparkFun MAX3010x Sensor Arduino Library](https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library)
+
+This package can be used in conjunction with the overall [SparkFun qwiic Python Package](https://github.com/sparkfun/Qwiic_Py)
+
+New to qwiic? Take a look at the entire [SparkFun qwiic ecosystem](https://www.sparkfun.com/qwiic).
+
+"""
+#-----------------------------------------------------------------------------
+from __future__ import print_function
+import struct
+import qwiic_i2c
+import time
+
+# Define the device name and I2C addresses. These are set in the class defintion
+# as class variables, making them avilable without having to create a class instance.
+# This allows higher level logic to rapidly create a index of qwiic devices at
+# runtine
+#
+# The name of this device
+_DEFAULT_NAME = "Qwiic MAX3010x"
+
+# Some devices have multiple availabel addresses - this is a list of these addresses.
+# NOTE: The first address in this list is considered the default I2C address for the
+# device.
+_AVAILABLE_I2C_ADDRESS = [0x57] # 7-bit I2C Address
+# Note that MAX30102 has the same I2C address and Part ID
+
+# Status Registers
+MAX30105_INTSTAT1 =		0x00 
+MAX30105_INTSTAT2 =		0x01 
+MAX30105_INTENABLE1 =		0x02 
+MAX30105_INTENABLE2 =		0x03 
+
+# FIFO Registers
+MAX30105_FIFOWRITEPTR = 	0x04 
+MAX30105_FIFOOVERFLOW = 	0x05 
+MAX30105_FIFOREADPTR = 	0x06 
+MAX30105_FIFODATA =		0x07 
+
+# Configuration Registers
+MAX30105_FIFOCONFIG = 		0x08 
+MAX30105_MODECONFIG = 		0x09 
+MAX30105_PARTICLECONFIG = 	0x0A     # Note, sometimes listed as "SPO2" config in datasheet (pg. 11)
+MAX30105_LED1_PULSEAMP = 	0x0C 
+MAX30105_LED2_PULSEAMP = 	0x0D 
+MAX30105_LED3_PULSEAMP = 	0x0E 
+MAX30105_LED_PROX_AMP = 	0x10 
+MAX30105_MULTILEDCONFIG1 = 0x11 
+MAX30105_MULTILEDCONFIG2 = 0x12 
+
+# Die Temperature Registers
+MAX30105_DIETEMPINT = 		0x1F 
+MAX30105_DIETEMPFRAC = 	0x20 
+MAX30105_DIETEMPCONFIG = 	0x21 
+
+# Proximity Function Registers
+MAX30105_PROXINTTHRESH = 	0x30 
+
+# Part ID Registers
+MAX30105_REVISIONID = 		0xFE 
+MAX30105_PARTID = 			0xFF     # Should always be 0x15. Identical to MAX30102.
+
+# MAX30105 Commands
+# Interrupt configuration (pg 13, 14)
+MAX30105_INT_A_FULL_MASK =		(byte)~0b10000000 
+MAX30105_INT_A_FULL_ENABLE = 	0x80 
+MAX30105_INT_A_FULL_DISABLE = 	0x00 
+
+MAX30105_INT_DATA_RDY_MASK = (byte)~0b01000000 
+MAX30105_INT_DATA_RDY_ENABLE =	0x40 
+MAX30105_INT_DATA_RDY_DISABLE = 0x00 
+
+MAX30105_INT_ALC_OVF_MASK = (byte)~0b00100000 
+MAX30105_INT_ALC_OVF_ENABLE = 	0x20 
+MAX30105_INT_ALC_OVF_DISABLE = 0x00 
+
+MAX30105_INT_PROX_INT_MASK = (byte)~0b00010000 
+MAX30105_INT_PROX_INT_ENABLE = 0x10 
+MAX30105_INT_PROX_INT_DISABLE = 0x00 
+
+MAX30105_INT_DIE_TEMP_RDY_MASK = (byte)~0b00000010 
+MAX30105_INT_DIE_TEMP_RDY_ENABLE = 0x02 
+MAX30105_INT_DIE_TEMP_RDY_DISABLE = 0x00 
+
+MAX30105_SAMPLEAVG_MASK =	(byte)~0b11100000 
+MAX30105_SAMPLEAVG_1 = 	0x00 
+MAX30105_SAMPLEAVG_2 = 	0x20 
+MAX30105_SAMPLEAVG_4 = 	0x40 
+MAX30105_SAMPLEAVG_8 = 	0x60 
+MAX30105_SAMPLEAVG_16 = 	0x80 
+MAX30105_SAMPLEAVG_32 = 	0xA0 
+
+MAX30105_ROLLOVER_MASK = 	0xEF 
+MAX30105_ROLLOVER_ENABLE = 0x10 
+MAX30105_ROLLOVER_DISABLE = 0x00 
+
+MAX30105_A_FULL_MASK = 	0xF0 
+
+# Mode configuration commands (page 19)
+MAX30105_SHUTDOWN_MASK = 	0x7F 
+MAX30105_SHUTDOWN = 		0x80 
+MAX30105_WAKEUP = 			0x00 
+
+MAX30105_RESET_MASK = 		0xBF 
+MAX30105_RESET = 			0x40 
+
+MAX30105_MODE_MASK = 		0xF8 
+MAX30105_MODE_REDONLY = 	0x02 
+MAX30105_MODE_REDIRONLY = 	0x03 
+MAX30105_MODE_MULTILED = 	0x07 
+
+# Particle sensing configuration commands (pgs 19-20)
+MAX30105_ADCRANGE_MASK = 	0x9F 
+MAX30105_ADCRANGE_2048 = 	0x00 
+MAX30105_ADCRANGE_4096 = 	0x20 
+MAX30105_ADCRANGE_8192 = 	0x40 
+MAX30105_ADCRANGE_16384 = 	0x60 
+
+MAX30105_SAMPLERATE_MASK = 0xE3 
+MAX30105_SAMPLERATE_50 = 	0x00 
+MAX30105_SAMPLERATE_100 = 	0x04 
+MAX30105_SAMPLERATE_200 = 	0x08 
+MAX30105_SAMPLERATE_400 = 	0x0C 
+MAX30105_SAMPLERATE_800 = 	0x10 
+MAX30105_SAMPLERATE_1000 = 0x14 
+MAX30105_SAMPLERATE_1600 = 0x18 
+MAX30105_SAMPLERATE_3200 = 0x1C 
+
+MAX30105_PULSEWIDTH_MASK = 0xFC 
+MAX30105_PULSEWIDTH_69 = 	0x00 
+MAX30105_PULSEWIDTH_118 = 	0x01 
+MAX30105_PULSEWIDTH_215 = 	0x02 
+MAX30105_PULSEWIDTH_411 = 	0x03 
+
+#Multi-LED Mode configuration (pg 22)
+MAX30105_SLOT1_MASK = 		0xF8 
+MAX30105_SLOT2_MASK = 		0x8F 
+MAX30105_SLOT3_MASK = 		0xF8 
+MAX30105_SLOT4_MASK = 		0x8F 
+
+SLOT_NONE = 				0x00 
+SLOT_RED_LED = 			0x01 
+SLOT_IR_LED = 				0x02 
+SLOT_GREEN_LED = 			0x03 
+SLOT_NONE_PILOT = 			0x04 
+SLOT_RED_PILOT =			0x05 
+SLOT_IR_PILOT = 			0x06 
+SLOT_GREEN_PILOT = 		0x07 
+
+MAX_30105_EXPECTEDPARTID = 0x15 
+
+# activeLEDs is the number of channels turned on, and can be 1 to 3. 2 is common for Red+IR.
+activeLEDs = 0 # Gets set during setup. Allows check() to calculate how many bytes to read from FIFO
+
+# define the class that encapsulates the device being created. All information associated with this
+# device is encapsulated by this class. The device class should be the only value exported
+# from this module.
+
+class QwiicMax3010x(object):
+    """
+    QwiicMax3010x
+
+        :param address: The I2C address to use for the device.
+                        If not provided, the default address is used.
+        :param i2c_driver: An existing i2c driver object. If not provided
+                        a driver object is created.
+        :return: The QwiicMax3010x device object.
+        :rtype: Object
+    """
+    # Constructor
+    device_name = _DEFAULT_NAME
+    available_addresses = _AVAILABLE_I2C_ADDRESS
+
+    # Constructor
+    def __init__(self, address=None, i2c_driver=None):
+
+        # Did the user specify an I2C address?
+        self.address = address if address is not None else self.available_addresses[0]
+
+        # load the I2C driver if one isn't provided
+
+        if i2c_driver is None:
+            self._i2c = qwiic_i2c.getI2CDriver()
+            if self._i2c is None:
+                print("Unable to load I2C driver for this platform.")
+                return
+        else:
+            self._i2c = i2c_driver
+
+    # ----------------------------------
+    # isConnected()
+    #
+    # Is an actual board connected to our system?
+
+    def is_connected(self):
+        """
+            Determine if a device is conntected to the system..
+
+            :return: True if the device is connected, otherwise False.
+            :rtype: bool
+
+        """
+        return qwiic_i2c.isDeviceConnected(self.address)
+
+    connected = property(is_connected)
+
+    # ----------------------------------
+    # bit_mask()
+    #
+    # Given a register, read it, mask it, and then set the thing
+
+    def bit_mask(self, reg, mask, thing):
+        """
+            Given a register, read it, mask it, and then set the thing
+
+            :return: Returns true of the register write was successful, otherwise False.
+            :rtype: bool
+
+        """
+
+        # Grab current register context, store it in local variable "temp_reg"
+        temp_reg = self._i2c.readByte(self.address, reg)
+
+        # Zero-out the portions of the register we're interested in
+        temp_reg &= mask
+
+        # Change contents
+        temp_reg |= thing
+
+        return self._i2c.writeByte(self.address, reg, temp_reg)
+
+    # ----------------------------------
+    # softReset()
+    #
+    # Command a soft reset
+
+    def softReset(self):
+        """
+            Command a soft reset
+
+            :return: Returns true of the soft reset was successful, otherwise False.
+            :rtype: bool
+
+        """
+        self.bit_mask(MAX30105_MODECONFIG, MAX30105_RESET_MASK, MAX30105_RESET)
+
+        # Poll for bit to clear, reset is then complete
+        # Timeout after 100ms
+        timeout = 100
+        while (timeout):
+            response = self._i2c.readByte(self.address, MAX30105_MODECONFIG)
+            if ((response & MAX30105_RESET) == 0):
+                return True # We're done!
+            time.sleep(0.001) # Let's not over burden the I2C bus
+            timeout -= 1
+        return False # soft reset failure
+
+    # 
+    #  Configuration
+    # 
+
+    # Begin Interrupt configuration
+    def getINT1(self):
+        return self._i2c.readByte(self.address, MAX30105_INTSTAT1)
+
+    def getINT2(self):
+        return self._i2c.readByte(self.address, MAX30105_INTSTAT2)
+
+    def enableAFULL(self):
+        self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_A_FULL_MASK, MAX30105_INT_A_FULL_ENABLE)
+
+    def disableAFULL(self):
+        self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_A_FULL_MASK, MAX30105_INT_A_FULL_DISABLE)
+
+    def enableDATARDY(self):
+        self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_DATA_RDY_MASK, MAX30105_INT_DATA_RDY_ENABLE)
+
+    def disableDATARDY(self):
+        self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_DATA_RDY_MASK, MAX30105_INT_DATA_RDY_DISABLE)
+
+    def enableALCOVF(self):
+        self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_ALC_OVF_MASK, MAX30105_INT_ALC_OVF_ENABLE)
+
+    def disableALCOVF(self):
+        self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_ALC_OVF_MASK, MAX30105_INT_ALC_OVF_DISABLE)
+
+    def enablePROXINT(self):
+        self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_PROX_INT_MASK, MAX30105_INT_PROX_INT_ENABLE)
+
+    def disablePROXINT(self):
+        self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_PROX_INT_MASK, MAX30105_INT_PROX_INT_DISABLE)
+
+    def enableDIETEMPRDY(self):
+        self.bit_mask(MAX30105_INTENABLE2, MAX30105_INT_DIE_TEMP_RDY_MASK, MAX30105_INT_DIE_TEMP_RDY_ENABLE)
+
+    def disableDIETEMPRDY(self):
+        self.bit_mask(MAX30105_INTENABLE2, MAX30105_INT_DIE_TEMP_RDY_MASK, MAX30105_INT_DIE_TEMP_RDY_DISABLE)
+
+    # End Interrupt configuration        
+
+    def shutDown(self):
+        # Put IC into low power mode (datasheet pg. 19)
+        # During shutdown the IC will continue to respond to I2C commands but will
+        # not update with or take new readings (such as temperature)
+        self.bit_mask(MAX30105_MODECONFIG, MAX30105_SHUTDOWN_MASK, MAX30105_SHUTDOWN)
+
+    def wakeUp(self):
+        # Pull IC out of low power mode (datasheet pg. 19)
+        self.bit_mask(MAX30105_MODECONFIG, MAX30105_SHUTDOWN_MASK, MAX30105_WAKEUP)
+
+    def setLEDMode(self, mode):
+        # Set which LEDs are used for sampling -- Red only, RED+IR only, or custom.
+        # See datasheet, page 19
+        self.bit_mask(MAX30105_MODECONFIG, MAX30105_MODE_MASK, mode)
+
+    def setADCRange(self, adcRange):
+        # adcRange: one of MAX30105_ADCRANGE_2048, _4096, _8192, _16384
+        self.bit_mask(MAX30105_PARTICLECONFIG, MAX30105_ADCRANGE_MASK, adcRange)
+
+    def setSampleRate(self, sampleRate):
+        # sampleRate: one of MAX30105_SAMPLERATE_50, _100, _200, _400, _800, _1000, _1600, _3200
+        self.bit_mask(MAX30105_PARTICLECONFIG, MAX30105_SAMPLERATE_MASK, sampleRate)
+
+    def setPulseWidth(self, pulseWidth):
+        # pulseWidth: one of MAX30105_PULSEWIDTH_69, _188, _215, _411
+        self.bit_mask(MAX30105_PARTICLECONFIG, MAX30105_PULSEWIDTH_MASK, pulseWidth)
+
+    # NOTE: Amplitude values: 0x00 = 0mA, 0x7F = 25.4mA, 0xFF = 50mA (typical)
+    # See datasheet, page 21
+    def setPulseAmplitudeRed(self, amplitude):
+        self._i2c.writeByte(self.address, MAX30105_LED1_PULSEAMP, amplitude)
+
+    def setPulseAmplitudeIR(self, amplitude):
+        self._i2c.writeByte(self.address, MAX30105_LED2_PULSEAMP, amplitude)
+
+    def setPulseAmplitudeGreen(self, amplitude):
+        self._i2c.writeByte(self.address, MAX30105_LED3_PULSEAMP, amplitude)
+
+    def setPulseAmplitudeProximity(self, amplitude):
+        self._i2c.writeByte(self.address, MAX30105_LED_PROX_AMP, amplitude)
+
+    def setProximityThreshold(self, threshMSB):
+        # Set the IR ADC count that will trigger the beginning of particle-sensing mode.
+        # The threshMSB signifies only the 8 most significant-bits of the ADC count.
+        # See datasheet, page 24.
+        self._i2c.writeByte(self.address, MAX30105_PROXINTTHRESH, threshMSB)
+
+    #Given a slot number assign a thing to it
+    #Devices are SLOT_RED_LED or SLOT_RED_PILOT (proximity)
+    #Assigning a SLOT_RED_LED will pulse LED
+    #Assigning a SLOT_RED_PILOT will ??
+    def enableSlot(self, slotNumber, device):
+        if slotNumber == 1:
+            return bit_mask(MAX30105_MULTILEDCONFIG1, MAX30105_SLOT1_MASK, device)
+        elif slotNumber == 2:
+            return bit_mask(MAX30105_MULTILEDCONFIG1, MAX30105_SLOT2_MASK, device << 4)
+        elif slotNumber == 3:
+            return bit_mask(MAX30105_MULTILEDCONFIG2, MAX30105_SLOT3_MASK, device)
+        elif slotNumber == 4:
+            return bit_mask(MAX30105_MULTILEDCONFIG2, MAX30105_SLOT4_MASK, device << 4)
+        else:
+            return False #Shouldn't be here!
+  
+    #Clears all slot assignments
+    def disableSlots(self):
+        self._i2c.writeByte(self.address, MAX30105_MULTILEDCONFIG1, 0)
+        self._i2c.writeByte(self.address, MAX30105_MULTILEDCONFIG2, 0)
+
+    #
+    # FIFO Configuration
+    #
+
+    #Set sample average (Table 3, Page 18)
+    def setFIFOAverage(self, numberOfSamples):
+        self.bit_mask(MAX30105_FIFOCONFIG, MAX30105_SAMPLEAVG_MASK, numberOfSamples)
+
+    #Resets all points to start in a known state
+    #Page 15 recommends clearing FIFO before beginning a read
+    def clearFIFO(self):
+        self._i2c.writeByte(self.address, MAX30105_FIFOWRITEPTR, 0)
+        self._i2c.writeByte(self.address, MAX30105_FIFOOVERFLOW, 0)
+        self._i2c.writeByte(self.address, MAX30105_FIFOREADPTR, 0)
+
+    #Enable roll over if FIFO over flows
+    def enableFIFORollover(self):
+        self.bit_mask(MAX30105_FIFOCONFIG, MAX30105_ROLLOVER_MASK, MAX30105_ROLLOVER_ENABLE)
+
+    #Disable roll over if FIFO over flows
+    def disableFIFORollover(self):
+        self.bit_mask(MAX30105_FIFOCONFIG, MAX30105_ROLLOVER_MASK, MAX30105_ROLLOVER_DISABLE)
+
+    #Set number of samples to trigger the almost full interrupt (Page 18)
+    #Power on default is 32 samples
+    #Note it is reverse: 0x00 is 32 samples, 0x0F is 17 samples
+    def setFIFOAlmostFull(self, numberOfSamples):
+        self.bit_mask(MAX30105_FIFOCONFIG, MAX30105_A_FULL_MASK, numberOfSamples)
+
+    #Read the FIFO Write Pointer
+    def getWritePointer(self):
+        return self._i2c.readByte(self.address, MAX30105_FIFOWRITEPTR))
+
+    #Read the FIFO Read Pointer
+    def getReadPointer(self):
+        return self._i2c.readByte(self.address, MAX30105_FIFOREADPTR))
+
+    # ----------------------------------
+    # setup()
+    #
+    # Setup the MAX3010x with default settings
+
+    # Setup the sensor
+    # The MAX30105 has many settings. By default we select:
+    #  Sample Average = 4
+    #  Mode = MultiLED
+    #  ADC Range = 16384 (62.5pA per LSB)
+    #  Sample rate = 50
+    # Use the default setup if you are just getting started with the MAX30105 sensor
+
+    def setup(self, powerLevel = 0x1F, sampleAverage = 4, ledMode = 3, sampleRate = 400, pulseWidth = 411, adcRange = 4096):
+        """
+            Setup the MAX3010x with default settings
+
+            :return: Returns true of the register write was successful, otherwise False.
+            :rtype: bool
+
+        """
+        self.softReset() # Reset all configuration, threshold, and data registers to POR values
+
+        # FIFO Configuration
+        # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        # The chip will average multiple samples of same type together if you wish
+        if sampleAverage == 1:
+            self.setFIFOAverage(MAX30105_SAMPLEAVG_1) # No averaging per FIFO record
+        elif sampleAverage == 2:
+            self.setFIFOAverage(MAX30105_SAMPLEAVG_2)
+        elif sampleAverage == 4:
+            self.setFIFOAverage(MAX30105_SAMPLEAVG_4)
+        elif sampleAverage == 8:
+            self.setFIFOAverage(MAX30105_SAMPLEAVG_8)
+        elif sampleAverage == 16:
+            self.setFIFOAverage(MAX30105_SAMPLEAVG_16)
+        elif sampleAverage == 32:
+            self.setFIFOAverage(MAX30105_SAMPLEAVG_32)
+        else:
+            self.setFIFOAverage(MAX30105_SAMPLEAVG_4)
+
+        # setFIFOAlmostFull(2) # Set to 30 samples to trigger an 'Almost Full' interrupt
+        self.enableFIFORollover() # Allow FIFO to wrap/roll over
+        # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        # Mode Configuration
+        # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        if ledMode == 3:
+            self.setLEDMode(MAX30105_MODE_MULTILED) # Watch all three LED channels
+        elif ledMode == 2:
+            self.setLEDMode(MAX30105_MODE_REDIRONLY) # Red and IR
+        else:
+            self.setLEDMode(MAX30105_MODE_REDONLY) # Red only
+        activeLEDs = ledMode # Used to control how many bytes to read from FIFO buffer
+        # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        # Particle Sensing Configuration
+        # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        if adcRange < 4096:
+            self.setADCRange(MAX30105_ADCRANGE_2048) # 7.81pA per LSB
+        elif adcRange < 8192:
+            self.setADCRange(MAX30105_ADCRANGE_4096) # 15.63pA per LSB
+        elif adcRange < 16384:
+            self.setADCRange(MAX30105_ADCRANGE_8192) # 31.25pA per LSB
+        elif adcRange == 16384:
+            self.setADCRange(MAX30105_ADCRANGE_16384) # 62.5pA per LSB
+        else:
+            self.setADCRange(MAX30105_ADCRANGE_2048)
+
+        if sampleRate < 100):
+            self.setSampleRate(MAX30105_SAMPLERATE_50) # Take 50 samples per second
+        elif sampleRate < 200:
+            self.setSampleRate(MAX30105_SAMPLERATE_100)
+        elif sampleRate < 400:
+            self.setSampleRate(MAX30105_SAMPLERATE_200)
+        elif sampleRate < 800:
+            self.setSampleRate(MAX30105_SAMPLERATE_400)
+        elif sampleRate < 1000:
+            self.setSampleRate(MAX30105_SAMPLERATE_800)
+        elif sampleRate < 1600:
+            self.setSampleRate(MAX30105_SAMPLERATE_1000)
+        elif sampleRate < 3200:
+            self.setSampleRate(MAX30105_SAMPLERATE_1600)
+        elif sampleRate == 3200:
+            self.setSampleRate(MAX30105_SAMPLERATE_3200)
+        else:
+            self.setSampleRate(MAX30105_SAMPLERATE_50)
+
+        # The longer the pulse width the longer range of detection you'll have
+        # At 69us and 0.4mA it's about 2 inches
+        # At 411us and 0.4mA it's about 6 inches
+        if pulseWidth < 118:
+            self.setPulseWidth(MAX30105_PULSEWIDTH_69) # Page 26, Gets us 15 bit resolution
+        elif pulseWidth < 215:
+            self.setPulseWidth(MAX30105_PULSEWIDTH_118) # 16 bit resolution
+        elif pulseWidth < 411:
+            self.setPulseWidth(MAX30105_PULSEWIDTH_215) # 17 bit resolution
+        elif pulseWidth == 411:
+            self.setPulseWidth(MAX30105_PULSEWIDTH_411) # 18 bit resolution
+        else:
+            self.setPulseWidth(MAX30105_PULSEWIDTH_69)
+        # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        # LED Pulse Amplitude Configuration
+        # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        # Default is 0x1F which gets us 6.4mA
+        # powerLevel = 0x02, 0.4mA - Presence detection of ~4 inch
+        # powerLevel = 0x1F, 6.4mA - Presence detection of ~8 inch
+        # powerLevel = 0x7F, 25.4mA - Presence detection of ~8 inch
+        # powerLevel = 0xFF, 50.0mA - Presence detection of ~12 inch
+
+        self.setPulseAmplitudeRed(powerLevel)
+        self.setPulseAmplitudeIR(powerLevel)
+        self.setPulseAmplitudeGreen(powerLevel)
+        self.setPulseAmplitudeProximity(powerLevel)
+        # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        # Multi-LED Mode Configuration, Enable the reading of the three LEDs
+        # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        self.enableSlot(1, SLOT_RED_LED)
+        if ledMode > 1):
+            self.enableSlot(2, SLOT_IR_LED)
+        if ledMode > 2:
+            self.enableSlot(3, SLOT_GREEN_LED)
+        # self.enableSlot(1, SLOT_RED_PILOT)
+        # self.nableSlot(2, SLOT_IR_PILOT)
+        # self.enableSlot(3, SLOT_GREEN_PILOT)
+        # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+        self.clearFIFO() # Reset the FIFO before we begin checking the sensor
+
+    # ----------------------------------
+    # begin()
+    #
+    # Initialize the system/validate the board.
+    def begin(self):
+        """
+            Initialize the operation of the Qwiic MAX3010x module
+
+            :return: Returns true of the initializtion was successful, otherwise False.
+            :rtype: bool
+
+        """
+
+        # Basically return True if we are connected...
+
+        return self.is_connected()
