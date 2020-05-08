@@ -120,27 +120,27 @@ MAX30105_PARTID = 			0xFF     # Should always be 0x15. Identical to MAX30102.
 
 # MAX30105 Commands
 # Interrupt configuration (pg 13, 14)
-MAX30105_INT_A_FULL_MASK =		(byte)~0b10000000 
+MAX30105_INT_A_FULL_MASK =		(~0b10000000)
 MAX30105_INT_A_FULL_ENABLE = 	0x80 
 MAX30105_INT_A_FULL_DISABLE = 	0x00 
 
-MAX30105_INT_DATA_RDY_MASK = (byte)~0b01000000 
+MAX30105_INT_DATA_RDY_MASK = (~0b01000000)
 MAX30105_INT_DATA_RDY_ENABLE =	0x40 
 MAX30105_INT_DATA_RDY_DISABLE = 0x00 
 
-MAX30105_INT_ALC_OVF_MASK = (byte)~0b00100000 
+MAX30105_INT_ALC_OVF_MASK = (~0b00100000)
 MAX30105_INT_ALC_OVF_ENABLE = 	0x20 
 MAX30105_INT_ALC_OVF_DISABLE = 0x00 
 
-MAX30105_INT_PROX_INT_MASK = (byte)~0b00010000 
+MAX30105_INT_PROX_INT_MASK = (~0b00010000)
 MAX30105_INT_PROX_INT_ENABLE = 0x10 
 MAX30105_INT_PROX_INT_DISABLE = 0x00 
 
-MAX30105_INT_DIE_TEMP_RDY_MASK = (byte)~0b00000010 
+MAX30105_INT_DIE_TEMP_RDY_MASK = (~0b00000010)
 MAX30105_INT_DIE_TEMP_RDY_ENABLE = 0x02 
 MAX30105_INT_DIE_TEMP_RDY_DISABLE = 0x00 
 
-MAX30105_SAMPLEAVG_MASK =	(byte)~0b11100000 
+MAX30105_SAMPLEAVG_MASK =	(~0b11100000)
 MAX30105_SAMPLEAVG_1 = 	0x00 
 MAX30105_SAMPLEAVG_2 = 	0x20 
 MAX30105_SAMPLEAVG_4 = 	0x40 
@@ -468,11 +468,11 @@ class QwiicMax3010x(object):
 
     #Read the FIFO Write Pointer
     def getWritePointer(self):
-        return self._i2c.readByte(self.address, MAX30105_FIFOWRITEPTR))
+        return self._i2c.readByte(self.address, MAX30105_FIFOWRITEPTR)
 
     #Read the FIFO Read Pointer
     def getReadPointer(self):
-        return self._i2c.readByte(self.address, MAX30105_FIFOREADPTR))
+        return self._i2c.readByte(self.address, MAX30105_FIFOREADPTR)
 
     # ----------------------------------
     # setup()
@@ -543,7 +543,7 @@ class QwiicMax3010x(object):
         else:
             self.setADCRange(MAX30105_ADCRANGE_2048)
 
-        if sampleRate < 100):
+        if sampleRate < 100:
             self.setSampleRate(MAX30105_SAMPLERATE_50) # Take 50 samples per second
         elif sampleRate < 200:
             self.setSampleRate(MAX30105_SAMPLERATE_100)
@@ -594,7 +594,7 @@ class QwiicMax3010x(object):
         # Multi-LED Mode Configuration, Enable the reading of the three LEDs
         # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         self.enableSlot(1, SLOT_RED_LED)
-        if ledMode > 1):
+        if ledMode > 1:
             self.enableSlot(2, SLOT_IR_LED)
         if ledMode > 2:
             self.enableSlot(3, SLOT_GREEN_LED)
@@ -672,7 +672,7 @@ class QwiicMax3010x(object):
 
             i = 0 # index used to know location within the buff list
             while i < bytesToRead:
-                self.head++ # Advance the head of the storage list
+                self.head += 1 # Advance the head of the storage list
                 self.head %= STORAGE_SIZE # Wrap condition
 
                 # First 3 bytes in buff will always be RED
@@ -745,9 +745,9 @@ class QwiicMax3010x(object):
     #Report the most recent Green value
     def getGreen(self):
         #Check the sensor for new data for 250ms
-        if safeCheck(250)
+        if safeCheck(250):
             return self.green[self.head]
-        else
+        else:
             return 0 #Sensor failed to find new data
 
     #Report the next Red value in the FIFO
