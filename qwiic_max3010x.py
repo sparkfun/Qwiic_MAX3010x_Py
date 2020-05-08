@@ -207,9 +207,6 @@ SLOT_GREEN_PILOT = 		0x07
 
 MAX_30105_EXPECTEDPARTID = 0x15 
 
-# activeLEDs is the number of channels turned on, and can be 1 to 3. 2 is common for Red+IR.
-activeLEDs = 0 # Gets set during setup. Allows check() to calculate how many bytes to read from FIFO
-
 # define the class that encapsulates the device being created. All information associated with this
 # device is encapsulated by this class. The device class should be the only value exported
 # from this module.
@@ -228,6 +225,22 @@ class QwiicMax3010x(object):
     # Constructor
     device_name = _DEFAULT_NAME
     available_addresses = _AVAILABLE_I2C_ADDRESS
+    
+    # activeLEDs is the number of channels turned on, and can be 1 to 3. 2 is common for Red+IR.
+    activeLEDs = 0 # Gets set during setup. Allows check() to calculate how many bytes to read from FIFO
+    
+    # Storage size
+    # (This is "left over" from the arduino library, but needed for rollovers) 
+    # Each long is 4 bytes so limit this to fit on your micro
+    STORAGE_SIZE = 4
+
+    # Circular buffer of readings from the sensor
+    red = [0,0,0,0] # place holders to make this list 4 spaces long (to mimic previous struct arrays in arduino library)
+    IR = [0,0,0,0]
+    green = [0,0,0,0]
+    head = 0
+    tail = 0
+
 
     # Constructor
     def __init__(self, address=None, i2c_driver=None):
@@ -401,7 +414,7 @@ class QwiicMax3010x(object):
         # Set the IR ADC count that will trigger the beginning of particle-sensing mode.
         # The threshMSB signifies only the 8 most significant-bits of the ADC count.
         # See datasheet, page 24.
-        self._i2c.writeByte(self.address, MAX30105_PROXINTTHRESH, threshMSB)
+        self._i2c.writeByte(self.address, MAX30105_PROXINTTHRESH, threshMSB)     
 
     #Given a slot number assign a thing to it
     #Devices are SLOT_RED_LED or SLOT_RED_PILOT (proximity)
@@ -514,7 +527,7 @@ class QwiicMax3010x(object):
             self.setLEDMode(MAX30105_MODE_REDIRONLY) # Red and IR
         else:
             self.setLEDMode(MAX30105_MODE_REDONLY) # Red only
-        activeLEDs = ledMode # Used to control how many bytes to read from FIFO buffer
+        self.activeLEDs = ledMode # Used to control how many bytes to read from FIFO buffer
         # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
         # Particle Sensing Configuration
@@ -608,3 +621,157 @@ class QwiicMax3010x(object):
         # Basically return True if we are connected...
 
         return self.is_connected()
+
+
+    #
+    # Data Collection
+    #
+
+    #Tell caller how many samples are available
+    def available(self):
+        numberOfSamples = self.head - self.tail
+        if numberOfSamples < 0:
+            numberOfSamples += self.STORAGE_SIZE
+        return numberOfSamples
+
+    #Advance the tail
+    def nextSample(self):
+        if available(): #Only advance the tail if new data is available
+            self.tail += 1
+            self.tail %= STORAGE_SIZE #Wrap condition
+
+    # Polls the sensor for new data
+    # Call regularly
+    # If new data is available, it updates the head and tail in the main lists of data
+    # Returns number of new samples obtained
+    def check(self):
+        # Read register FIDO_DATA (3-byte * number of active LED)
+        # Until FIFO_RD_PTR = FIFO_WR_PTR
+
+        readPointer = self.getReadPointer()
+        writePointer = self.getWritePointer()
+
+        numberOfSamples = 0
+
+        #Do we have new data?
+        if readPointer != writePointer:
+            #Calculate the number of readings we need to get from sensor
+            numberOfSamples = writePointer - readPointer
+            if (numberOfSamples < 0):
+                numberOfSamples += 32 #Wrap condition
+
+            #We now have the number of readings, now calc bytes to read
+            #For this example we are just doing Red and IR (3 bytes each)
+            bytesToRead = numberOfSamples * activeLEDs * 3
+            
+            buff = self._i2c.readBlock(self.address, MAX30105_FIFODATA, bytesToRead)
+            
+            # Grab all the bytes we just read into buff, and plug them into the correct local variables.
+            # Note, we need to keep track of where we are in the buff (using index "i")
+            # Also, the bytes in buff will mean different things, according to which LEDs are active (Red, IR, and/or Green)
+
+            i = 0 # index used to know location within the buff list
+            while i < bytesToRead:
+                self.head++ # Advance the head of the storage list
+                self.head %= STORAGE_SIZE # Wrap condition
+
+                # First 3 bytes in buff will always be RED
+                tempByte2 = buff[i+0]
+                tempByte1 = buff[i+1]
+                tempByte0 = buff[i+2]
+
+                # Combine bytes into single 32 bit integer variable
+                tempLong = 0
+                tempLong = ( tempByte0 | (tempByte1 << 8) | (tempByte2 << 16) )
+                tempLong &= 0x3FFFF # Zero out all but 18 bits
+                self.red[self.head] = tempLong # Store this reading into the red list at head
+
+                if (activeLEDs > 1):
+                    # Next 3 bytes in buff will be IR
+                    tempByte2 = buff[i+3]
+                    tempByte1 = buff[i+4]
+                    tempByte0 = buff[i+5]
+
+                    # Combine bytes into single 32 bit integer variable
+                    tempLong = 0
+                    tempLong = ( tempByte0 | (tempByte1 << 8) | (tempByte2 << 16) )
+                    tempLong &= 0x3FFFF # Zero out all but 18 bits
+                    self.IR[self.head] = tempLong # Store this reading into the IR list at head                    
+
+                if (activeLEDs > 2):
+                    # Next 3 bytes in buff will be GREEN
+                    tempByte2 = buff[i+6]
+                    tempByte1 = buff[i+7]
+                    tempByte0 = buff[i+8]
+
+                    # Combine bytes into single 32 bit integer variable
+                    tempLong = 0
+                    tempLong = ( tempByte0 | (tempByte1 << 8) | (tempByte2 << 16) )
+                    tempLong &= 0x3FFFF # Zero out all but 18 bits
+                    self.green[self.head] = tempLong # Store this reading into the IR list at head          
+                
+                i += ( activeLEDs * 3 ) # Increment to the start of the next sample
+
+        return (numberOfSamples) #Let the world know how much new data we found
+
+    # Check for new data but give up after a certain amount of time
+    # Returns true if new data was found
+    # Returns false if new data was not found
+    def safeCheck(self, maxTimeToCheck):
+        timeout = maxTimeToCheck
+        while(timeout):
+            if(self.check() == True): #We found new data!
+                return True
+            time.sleep(0.001)
+            timeout -= 1
+        return False
+
+    #Report the most recent red value
+    def getRed(self):
+        #Check the sensor for new data for 250ms
+        if safeCheck(250):
+            return self.red[self.head]
+        else:
+            return 0 #Sensor failed to find new data
+
+    #Report the most recent IR value
+    def getIR(self):
+        #Check the sensor for new data for 250ms
+        if safeCheck(250):
+            return (self.IR[self.head])
+        else:
+            return 0 #Sensor failed to find new data
+
+    #Report the most recent Green value
+    def getGreen(self):
+        #Check the sensor for new data for 250ms
+        if safeCheck(250)
+            return self.green[self.head]
+        else
+            return 0 #Sensor failed to find new data
+
+    #Report the next Red value in the FIFO
+    def getFIFORed(self):
+        return self.red[self.tail]
+
+    #Report the next IR value in the FIFO
+    def getFIFOIR(self):
+        return self.IR[self.tail]
+
+    #Report the next Green value in the FIFO
+    def getFIFOGreen(self):
+        return self.green[self.tail]
+
+
+    #
+    # Device ID and Revision
+    #
+
+    def readPartID(self):
+        return self._i2c.readByte(self.address, MAX30105_PARTID)
+
+    def readRevisionID(self):
+        self.revisionID = self._i2c.readByte(self.address, MAX30105_REVISIONID)
+
+    def getRevisionID(self):
+        return self.revisionID
