@@ -68,6 +68,8 @@ from __future__ import print_function
 import struct
 import qwiic_i2c
 import time
+from smbus2 import SMBus, i2c_msg
+_i2c_msg = i2c_msg
 
 # Define the device name and I2C addresses. These are set in the class defintion
 # as class variables, making them avilable without having to create a class instance.
@@ -205,7 +207,7 @@ SLOT_RED_PILOT =			0x05
 SLOT_IR_PILOT = 			0x06 
 SLOT_GREEN_PILOT = 		0x07 
 
-MAX_30105_EXPECTEDPARTID = 0x15 
+MAX_30105_EXPECTEDPARTID = 0x15
 
 # define the class that encapsulates the device being created. All information associated with this
 # device is encapsulated by this class. The device class should be the only value exported
@@ -241,6 +243,9 @@ class QwiicMax3010x(object):
     head = 0
     tail = 0
 
+    readPointer = 0
+    writePointer = 0
+    numberOfSamples = 0
 
     # Constructor
     def __init__(self, address=None, i2c_driver=None):
@@ -422,13 +427,13 @@ class QwiicMax3010x(object):
     #Assigning a SLOT_RED_PILOT will ??
     def enableSlot(self, slotNumber, device):
         if slotNumber == 1:
-            return bit_mask(MAX30105_MULTILEDCONFIG1, MAX30105_SLOT1_MASK, device)
+            return self.bit_mask(MAX30105_MULTILEDCONFIG1, MAX30105_SLOT1_MASK, device)
         elif slotNumber == 2:
-            return bit_mask(MAX30105_MULTILEDCONFIG1, MAX30105_SLOT2_MASK, device << 4)
+            return self.bit_mask(MAX30105_MULTILEDCONFIG1, MAX30105_SLOT2_MASK, device << 4)
         elif slotNumber == 3:
-            return bit_mask(MAX30105_MULTILEDCONFIG2, MAX30105_SLOT3_MASK, device)
+            return self.bit_mask(MAX30105_MULTILEDCONFIG2, MAX30105_SLOT3_MASK, device)
         elif slotNumber == 4:
-            return bit_mask(MAX30105_MULTILEDCONFIG2, MAX30105_SLOT4_MASK, device << 4)
+            return self.bit_mask(MAX30105_MULTILEDCONFIG2, MAX30105_SLOT4_MASK, device << 4)
         else:
             return False #Shouldn't be here!
   
@@ -650,69 +655,87 @@ class QwiicMax3010x(object):
 
         readPointer = self.getReadPointer()
         writePointer = self.getWritePointer()
-
         numberOfSamples = 0
 
         #Do we have new data?
         if readPointer != writePointer:
-            #Calculate the number of readings we need to get from sensor
-            numberOfSamples = writePointer - readPointer
+            #Calculate the number of samples we need to get from sensor
+            numberOfSamples = (writePointer - readPointer)
             if (numberOfSamples < 0):
                 numberOfSamples += 32 #Wrap condition
+                
+            #We now have the number of samples, now calc bytes to read
+            bytesToRead = numberOfSamples * self.activeLEDs * 3
 
-            #We now have the number of readings, now calc bytes to read
-            #For this example we are just doing Red and IR (3 bytes each)
-            bytesToRead = numberOfSamples * activeLEDs * 3
-            
-            buff = self._i2c.readBlock(self.address, MAX30105_FIFODATA, bytesToRead)
+            # Send command to prepare to read the FIFODATA location from sensor
+            self._i2c.writeCommand(self.address, MAX30105_FIFODATA)
+
+            # Block Read (>32 bytes) bytesToRead from the sensor
+            with SMBus(1) as bus:
+                msg = i2c_msg.read(self.address, bytesToRead)
+                bus.i2c_rdwr(msg)
+            buff = list(msg)
             
             # Grab all the bytes we just read into buff, and plug them into the correct local variables.
-            # Note, we need to keep track of where we are in the buff (using index "i")
-            # Also, the bytes in buff will mean different things, according to which LEDs are active (Red, IR, and/or Green)
+            # Note, we need to keep track of where we are in the buff (using sampleNumber and buffIndex "i")
+            # Also, the bytes in buff will mean different things,
+            # according to which LEDs are active (Red, IR, and/or Green)
 
-            i = 0 # index used to know location within the buff list
-            while i < bytesToRead:
+            # for loop through the entire buff list,
+            # using sampleNumber to "jump" buffIndex as necessary to each sample start within buff
+            for sampleNumber in range(0, numberOfSamples):
+                buffIndex = sampleNumber * self.activeLEDs * 3 # move index to the start of the next sample
                 self.head += 1 # Advance the head of the storage list
-                self.head %= STORAGE_SIZE # Wrap condition
+                self.head %= self.STORAGE_SIZE # Wrap condition
 
                 # First 3 bytes in buff will always be RED
-                tempByte2 = buff[i+0]
-                tempByte1 = buff[i+1]
-                tempByte0 = buff[i+2]
+                tempByte2 = buff[buffIndex+0]
+                tempByte1 = buff[buffIndex+1]
+                tempByte0 = buff[buffIndex+2]
+
+                #also copy to varaibles for testing
+                #self.byte0 = tempByte0
+                #self.byte1 = tempByte1
+                #self.byte2 = tempByte2
 
                 # Combine bytes into single 32 bit integer variable
                 tempLong = 0
-                tempLong = ( tempByte0 | (tempByte1 << 8) | (tempByte2 << 16) )
+                tempLong |= tempByte0
+                tempLong |= (tempByte1 << 8) 
+                tempLong |= (tempByte2 << 16)
                 tempLong &= 0x3FFFF # Zero out all but 18 bits
                 self.red[self.head] = tempLong # Store this reading into the red list at head
+                #self.red[self.head] = tempByte0 # Store this reading into the red list at head
 
-                if (activeLEDs > 1):
+                if (self.activeLEDs > 1):
                     # Next 3 bytes in buff will be IR
-                    tempByte2 = buff[i+3]
-                    tempByte1 = buff[i+4]
-                    tempByte0 = buff[i+5]
+                    tempByte2 = buff[buffIndex+3]
+                    tempByte1 = buff[buffIndex+4]
+                    tempByte0 = buff[buffIndex+5]
 
                     # Combine bytes into single 32 bit integer variable
                     tempLong = 0
-                    tempLong = ( tempByte0 | (tempByte1 << 8) | (tempByte2 << 16) )
+                    tempLong |= tempByte0
+                    tempLong |= (tempByte1 << 8) 
+                    tempLong |= (tempByte2 << 16)
                     tempLong &= 0x3FFFF # Zero out all but 18 bits
                     self.IR[self.head] = tempLong # Store this reading into the IR list at head                    
 
-                if (activeLEDs > 2):
+                if (self.activeLEDs > 2):
                     # Next 3 bytes in buff will be GREEN
-                    tempByte2 = buff[i+6]
-                    tempByte1 = buff[i+7]
-                    tempByte0 = buff[i+8]
+                    tempByte2 = buff[buffIndex+6]
+                    tempByte1 = buff[buffIndex+7]
+                    tempByte0 = buff[buffIndex+8]
 
                     # Combine bytes into single 32 bit integer variable
                     tempLong = 0
-                    tempLong = ( tempByte0 | (tempByte1 << 8) | (tempByte2 << 16) )
+                    tempLong |= tempByte0
+                    tempLong |= (tempByte1 << 8) 
+                    tempLong |= (tempByte2 << 16)
                     tempLong &= 0x3FFFF # Zero out all but 18 bits
                     self.green[self.head] = tempLong # Store this reading into the IR list at head          
-                
-                i += ( activeLEDs * 3 ) # Increment to the start of the next sample
 
-        return (numberOfSamples) #Let the world know how much new data we found
+        return numberOfSamples #Let the world know how much new data we found
 
     # Check for new data but give up after a certain amount of time
     # Returns true if new data was found
@@ -720,7 +743,7 @@ class QwiicMax3010x(object):
     def safeCheck(self, maxTimeToCheck):
         timeout = maxTimeToCheck
         while(timeout):
-            if(self.check() == True): #We found new data!
+            if(self.check() > 0): #We found new data!
                 return True
             time.sleep(0.001)
             timeout -= 1
@@ -729,7 +752,7 @@ class QwiicMax3010x(object):
     #Report the most recent red value
     def getRed(self):
         #Check the sensor for new data for 250ms
-        if safeCheck(250):
+        if self.safeCheck(250):
             return self.red[self.head]
         else:
             return 0 #Sensor failed to find new data
@@ -737,7 +760,7 @@ class QwiicMax3010x(object):
     #Report the most recent IR value
     def getIR(self):
         #Check the sensor for new data for 250ms
-        if safeCheck(250):
+        if self.safeCheck(250):
             return (self.IR[self.head])
         else:
             return 0 #Sensor failed to find new data
@@ -745,7 +768,7 @@ class QwiicMax3010x(object):
     #Report the most recent Green value
     def getGreen(self):
         #Check the sensor for new data for 250ms
-        if safeCheck(250):
+        if self.safeCheck(250):
             return self.green[self.head]
         else:
             return 0 #Sensor failed to find new data

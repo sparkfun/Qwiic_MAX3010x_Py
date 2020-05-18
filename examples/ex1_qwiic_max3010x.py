@@ -54,27 +54,23 @@ def runExample():
 		print("The Qwiic MAX3010x device isn't connected to the system. Please check your connection", \
 			file=sys.stderr)
 		return
-    else:
-        print("The Qwiic MAX3010x is connected.")
+	else:
+		print("The Qwiic MAX3010x is connected.")
 
 	if particleSensor.setup() == False:
 		print("Device setup failure. Please check your connection", \
 			file=sys.stderr)
 		return
-    else:
-        print("Setup complete.")        
+	else:
+		print("Setup complete.")        
 
 	while True:
 			print(\
-			 '{: 06d}'.format(particleSensor.axRaw)\
-			, '\t', 'R[', particleSensor.getRed() , ']'\
-            , '\t', 'IR[', particleSensor.getIR() , ']'\
-            , '\t', 'G[', particleSensor.getGreen() , ']'
+			 'R[', particleSensor.getRed() , '] \t'\
+                                                             'IR[', particleSensor.getIR() , '] \t'\
+                                                             'G[', particleSensor.getGreen() , ']'\
 			)
-			time.sleep(0.03)
-		else:
-			print("Waiting for data")
-			time.sleep(0.5)
+			time.sleep(0.1)
 
 if __name__ == '__main__':
 	try:
