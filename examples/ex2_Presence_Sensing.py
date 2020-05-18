@@ -1,12 +1,19 @@
 #!/usr/bin/env python
 #-----------------------------------------------------------------------------
-# ex1_qwiic_MAX3010x.py
+# ex2_Presence_Sensing.py
 #
 # Simple example for the qwiic MAX3010x device
+# This takes an average reading at power up and if the reading changes more than 100,
+# then print 'Something is there!'.
+#
 #------------------------------------------------------------------------
 #
 # Written by Pete Lewis
 # SparkFun Electronics, May 2020
+#
+# Based on code from the SparkFun MAX3010x Sensor Arduino Library
+# https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
+# By: Nathan Seidle @ SparkFun Electronics, October 2nd, 2016
 # 
 # This python library supports the SparkFun Electroncis qwiic 
 # qwiic sensor/board ecosystem on a Raspberry Pi (and compatable) single
@@ -37,13 +44,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 # SOFTWARE.
 #==================================================================================
-# Example 1
+# Example 2
 #
 
 from __future__ import print_function
 import qwiic_max3010x
 import time
 import sys
+
+def millis():
+	return int(round(time.time() * 1000))
 
 def runExample():
 
@@ -57,20 +67,51 @@ def runExample():
 	else:
 		print("The Qwiic MAX3010x is connected.")
 
-	if particleSensor.setup() == False:
+  	# Setup to sense up to 18 inches, max LED brightness
+	ledBrightness = 0xFF # Options: 0=Off to 255=50mA
+	sampleAverage = 4 # Options: 1, 2, 4, 8, 16, 32
+	ledMode = 2 # Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
+	sampleRate = 400 # Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
+	pulseWidth = 411 # Options: 69, 118, 215, 411
+	adcRange = 2048 # Options: 2048, 4096, 8192, 16384
+
+	if particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange) == False:
 		print("Device setup failure. Please check your connection", \
 			file=sys.stderr)
 		return
 	else:
 		print("Setup complete.")        
 
+	particleSensor.setPulseAmplitudeRed(0) # Turn off Red LED
+	particleSensor.setPulseAmplitudeGreen(0) # Turn off Green LED
+
+	# Take an average of IR readings at power up
+  	unblockedValue = 0
+	for i in range(0,32):
+    	unblockedValue += particleSensor.getIR() # Read the IR value
+	unblockedValue /= 32
+
+	startTime = millis()
+
+
 	while True:
+			samplesTaken += 1
+
+			IRSample = particleSensor.getIR()
+			hertz = samplesTaken / ((millis() - startTime) / 1000)
+			currentDelta = (IRSample - unblockedValue)
+
+			message = ' ' # blank message
+			if currentDelta > 100:
+				message = 'Something is there!'
+
 			print(\
-			 'R[', particleSensor.getRed() , '] \t'\
-                                                             'IR[', particleSensor.getIR() , '] \t'\
-                                                             'G[', particleSensor.getGreen() , ']'\
+			 'IR[', IRSample , '] \t',\
+             'Hz[', hertz , '] \t',\
+			 'delta[', currentDelta, ']',\
+			 message
 			)
-			time.sleep(0.1)
+
 
 if __name__ == '__main__':
 	try:
