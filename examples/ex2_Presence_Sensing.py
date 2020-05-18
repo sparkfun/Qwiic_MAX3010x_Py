@@ -85,10 +85,14 @@ def runExample():
 	particleSensor.setPulseAmplitudeRed(0) # Turn off Red LED
 	particleSensor.setPulseAmplitudeGreen(0) # Turn off Green LED
 
+	samplesTaken = 0       # Counter for calculating the Hz or read rate
+	unblockedValue = 0     # Average IR at power up
+	startTime = 0          # Used to calculate measurement rate
+
 	# Take an average of IR readings at power up
-  	unblockedValue = 0
+	unblockedValue = 0
 	for i in range(0,32):
-    	unblockedValue += particleSensor.getIR() # Read the IR value
+		unblockedValue += particleSensor.getIR() # Read the IR value
 	unblockedValue /= 32
 
 	startTime = millis()
@@ -100,6 +104,9 @@ def runExample():
 			IRSample = particleSensor.getIR()
 			hertz = samplesTaken / ((millis() - startTime) / 1000)
 			currentDelta = (IRSample - unblockedValue)
+
+			hertz = round(hertz, 2)
+			currentDelta = round(currentDelta, 2)
 
 			message = ' ' # blank message
 			if currentDelta > 100:

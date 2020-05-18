@@ -51,10 +51,6 @@ import qwiic_max3010x
 import time
 import sys
 
-samplesTaken = 0       # Counter for calculating the Hz or read rate
-unblockedValue = 0     # Average IR at power up
-startTime = 0          # Used to calculate measurement rate
-
 def runExample():
 
 	print("\nSparkFun MAX3010x Particle Sensor - Example 2\n")
