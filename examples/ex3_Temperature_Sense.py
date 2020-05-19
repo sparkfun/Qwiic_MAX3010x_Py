@@ -80,10 +80,10 @@ def runExample():
 
 	while True:
 			temperature = particleSensor.readTemperature()
-            temperatureF = particleSensor.readTemperatureF()
+			temperatureF = particleSensor.readTemperatureF()
 
-            temperature = round(temperature, 4)
-            temperatureF = round(temperatureF, 4)
+			temperature = round(temperature, 4)
+			temperatureF = round(temperatureF, 4)
 
 			print(\
 			 'temperatureC[', temperature , '] \t',\

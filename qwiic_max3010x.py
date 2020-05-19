@@ -319,7 +319,7 @@ class QwiicMax3010x(object):
             :rtype: int32_t
 
         """        
-	    return int(round(time.time() * 1000))
+        return int(round(time.time() * 1000))
 
     # ----------------------------------
     # softReset()
@@ -835,7 +835,7 @@ class QwiicMax3010x(object):
             response = self._i2c.readByte(self.address, MAX30105_INTSTAT2)
             if ((response & MAX30105_INT_DIE_TEMP_RDY_ENABLE) > 0):
                 break # We're done!
-            delay(1); # Let's not over burden the I2C bus
+            time.sleep(0.001) # Let's not over burden the I2C bus
 
         # Step 2: Read die temperature register (integer)
         tempInt = self._i2c.readByte(self.address, MAX30105_DIETEMPINT)
@@ -852,7 +852,7 @@ class QwiicMax3010x(object):
     #
 
     def readTemperatureF(self):
-        temp = readTemperature()
+        temp = self.readTemperature()
         if (temp != -999.0):
             temp = ( (temp * 1.8) + 32.0 )
         return temp
