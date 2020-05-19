@@ -306,6 +306,22 @@ class QwiicMax3010x(object):
         return self._i2c.writeByte(self.address, reg, temp_reg)
 
     # ----------------------------------
+    # millis()
+    #
+    # Returns the current time in milliseconds
+
+    def millis(self):
+
+        """
+            Returns the current time in milliseconds
+
+            :return: Returns current system time in milliseconds
+            :rtype: int32_t
+
+        """        
+	    return int(round(time.time() * 1000))
+
+    # ----------------------------------
     # softReset()
     #
     # Command a soft reset
@@ -785,7 +801,6 @@ class QwiicMax3010x(object):
     def getFIFOGreen(self):
         return self.green[self.tail]
 
-
     #
     # Device ID and Revision
     #
@@ -798,3 +813,46 @@ class QwiicMax3010x(object):
 
     def getRevisionID(self):
         return self.revisionID
+
+    #
+    # Die Temperature
+    # Returns temp in C
+    #
+
+    def readTemperature(self):
+
+        # DIE_TEMP_RDY interrupt must be enabled
+        # See issue 19: https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library/issues/19
+        
+        # Step 1: Config die temperature register to take 1 temperature sample
+        self._i2c.writeByte(self.address, MAX30105_DIETEMPCONFIG, 0x01)
+
+        # Poll for bit to clear, reading is then complete
+        # Timeout after 100ms
+        startTime = self.millis()
+        while ( ( self.millis() - startTime ) < 100 ):
+            # Check to see if DIE_TEMP_RDY interrupt is set
+            response = self._i2c.readByte(self.address, MAX30105_INTSTAT2)
+            if ((response & MAX30105_INT_DIE_TEMP_RDY_ENABLE) > 0):
+                break # We're done!
+            delay(1); # Let's not over burden the I2C bus
+
+        # Step 2: Read die temperature register (integer)
+        tempInt = self._i2c.readByte(self.address, MAX30105_DIETEMPINT)
+        tempFrac = self._i2c.readByte(self.address, MAX30105_DIETEMPFRAC) # Causes the clearing of the DIE_TEMP_RDY interrupt
+
+        tempInt = float(tempInt)
+        tempFrac = float(tempFrac)
+
+        # Step 3: Calculate temperature (datasheet pg. 23)
+        return (tempInt + (tempFrac * 0.0625))
+
+    #
+    # Returns die temp in F
+    #
+
+    def readTemperatureF(self):
+        temp = readTemperature()
+        if (temp != -999.0):
+            temp = ( (temp * 1.8) + 32.0 )
+        return temp
