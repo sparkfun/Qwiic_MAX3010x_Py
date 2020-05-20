@@ -1,0 +1,136 @@
+#!/usr/bin/env python
+#-----------------------------------------------------------------------------
+# ex5_HeartRate.py
+#
+# Simple example for the qwiic MAX3010x device
+# This is a demo to show the reading of heart rate or beats per minute (BPM) using
+# a Penpheral Beat Amplitude (PBA) algorithm.
+#
+# It is best to attach the sensor to your finger using a rubber band or other tightening
+# device. Humans are generally bad at applying constant pressure to a thing. When you
+# press your finger against the sensor it varies enough to cause the blood in your
+# finger to flow differently which causes the sensor readings to go wonky.
+#
+#------------------------------------------------------------------------
+#
+# Written by Pete Lewis
+# SparkFun Electronics, May 2020
+#
+# Based on code from the SparkFun MAX3010x Sensor Arduino Library
+# https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library
+# By: Nathan Seidle @ SparkFun Electronics, October 2nd, 2016
+# 
+# This python library supports the SparkFun Electroncis qwiic 
+# qwiic sensor/board ecosystem on a Raspberry Pi (and compatable) single
+# board computers. 
+#
+# More information on qwiic is at https://www.sparkfun.com/qwiic
+#
+# Do you like this library? Help support SparkFun. Buy a board!
+#
+#==================================================================================
+# Copyright (c) 2019 SparkFun Electronics
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy 
+# of this software and associated documentation files (the "Software"), to deal 
+# in the Software without restriction, including without limitation the rights 
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+# copies of the Software, and to permit persons to whom the Software is 
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all 
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+# SOFTWARE.
+#==================================================================================
+# Example 5
+#
+
+from __future__ import print_function
+import qwiic_max3010x
+import time
+import sys
+from heartRate import *
+
+RATE_SIZE = 4 # Increase this for more averaging. 4 is good.
+rates = list(range(RATE_SIZE)) # list of heart rates
+rateSpot = 0
+lastBeat = 0 # Time at which the last beat occurred
+
+beatsPerMinute = 0.00
+beatAvg = 0
+
+def millis():
+	return int(round(time.time() * 1000))
+
+def runExample():
+
+	print("\nSparkFun MAX3010x Particle Sensor - Example 2\n")
+	particleSensor = qwiic_max3010x.QwiicMax3010x()
+
+	if particleSensor.begin() == False:
+		print("The Qwiic MAX3010x device isn't connected to the system. Please check your connection", \
+			file=sys.stderr)
+		return
+	else:
+		print("The Qwiic MAX3010x is connected.")
+
+	print("Place your index finger on the sensor with steady pressure.")
+
+	if particleSensor.setup() == False:
+		print("Device setup failure. Please check your connection", \
+			file=sys.stderr)
+		return
+	else:
+		print("Setup complete.")
+
+	particleSensor.setPulseAmplitudeRed(0x0A) # Turn Red LED to low to indicate sensor is running
+	particleSensor.setPulseAmplitudeGreen(0) # Turn off Green LED
+	global beatsPerMinute
+	global beatAvg
+	while True:
+                
+		irValue = particleSensor.getIR()
+		if checkForBeat(irValue) == True:
+			# We sensed a beat!
+			delta = ( millis() - lastBeat )
+			lastBeat = millis()	
+	
+			beatsPerMinute = 60 / (delta / 1000.0)		
+	
+			if beatsPerMinute < 255 and beatsPerMinute > 20:
+				rateSpot += 1
+				rates[rateSpot] = beatsPerMinute # Store this reading in the array
+				rateSpot %= RATE_SIZE # Wrap variable
+
+				# Take average of readings
+				beatAvg = 0
+				for x in range(0, RATE_SIZE):
+					beatAvg += rates[x]
+				beatAvg /= RATE_SIZE
+        
+		message = ' ' # blank message, unless...
+		if irValue < 50000:
+			message = ' No Finger?'
+
+		print(\
+			'R[', irValue , '] \t',\
+            			'BPM[', beatsPerMinute , '] \t',\
+            			'Avg BPM[', beatAvg , '] \t',\
+            			message\
+			)
+
+if __name__ == '__main__':
+	try:
+		runExample()
+	except (KeyboardInterrupt, SystemExit) as exErr:
+		print("\nEnding Example 1")
+		sys.exit(0)
+
+
