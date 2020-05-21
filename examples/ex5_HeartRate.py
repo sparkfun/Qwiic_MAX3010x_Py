@@ -66,6 +66,9 @@ lastBeat = 0 # Time at which the last beat occurred
 beatsPerMinute = 0.00
 beatAvg = 0
 
+samplesTaken = 0 # Counter for calculating the Hz or read rate
+startTime = 0 # Used to calculate measurement rate
+
 def millis():
 	return int(round(time.time() * 1000))
 
@@ -94,11 +97,18 @@ def runExample():
 	particleSensor.setPulseAmplitudeGreen(0) # Turn off Green LED
 	global beatsPerMinute
 	global beatAvg
+	global startTime
+	global samplesTaken
+	startTime = millis()
+	
 	while True:
                 
 		irValue = particleSensor.getIR()
+		samplesTaken += 1
+		global IR_Average_Estimated
 		if checkForBeat(irValue) == True:
 			# We sensed a beat!
+			print('B')
 			delta = ( millis() - lastBeat )
 			lastBeat = millis()	
 	
@@ -110,21 +120,25 @@ def runExample():
 				rateSpot %= RATE_SIZE # Wrap variable
 
 				# Take average of readings
-				beatAvg = 0
-				for x in range(0, RATE_SIZE):
-					beatAvg += rates[x]
-				beatAvg /= RATE_SIZE
+				#beatAvg = 0
+				#for x in range(0, RATE_SIZE):
+				#	beatAvg += rates[x]
+				#beatAvg /= RATE_SIZE
         
-		message = ' ' # blank message, unless...
-		if irValue < 50000:
-			message = ' No Finger?'
-
-		print(\
-			'R[', irValue , '] \t',\
-            			'BPM[', beatsPerMinute , '] \t',\
-            			'Avg BPM[', beatAvg , '] \t',\
-            			message\
-			)
+		#message = ' ' # blank message, unless...
+		#if irValue < 50000:
+		#	message = ' No Finger?'
+		Hz = round(float(samplesTaken) / ( ( millis() - startTime ) / 1000.0 ) , 2)
+		if (samplesTaken % 200 ) == 0:
+                        
+			print(\
+				'R[', irValue , '] \t',\
+            				#'BPM', beatsPerMinute , '\t',\
+                                                                                'DCE', getDCE() , '\t',\
+            				#'Avg BPM[', beatAvg , '] \t',\
+				'Hz', Hz\
+            				#message\
+				)
 
 if __name__ == '__main__':
 	try:

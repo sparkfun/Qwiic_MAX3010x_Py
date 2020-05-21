@@ -105,6 +105,9 @@ def lowPassFIRFilter(din):
 
     return (z >> 15)
 
+def getDCE():
+    global IR_Average_Estimated
+    return IR_Average_Estimated
 
 #  Heart Rate Monitor functions takes a sample value and the sample number
 #  Returns True if a beat is detected
