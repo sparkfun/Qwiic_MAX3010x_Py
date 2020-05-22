@@ -74,7 +74,7 @@ def millis():
 
 def runExample():
 
-	print("\nSparkFun MAX3010x Particle Sensor - Example 2\n")
+	print("\nSparkFun MAX3010x Particle Sensor - Example 5\n")
 	particleSensor = qwiic_max3010x.QwiicMax3010x()
 
 	if particleSensor.begin() == False:
@@ -106,45 +106,47 @@ def runExample():
 		irValue = particleSensor.getIR()
 		samplesTaken += 1
 		global IR_Average_Estimated
+		global lastBeat
+		global rateSpot
+		global rates
+		global RATE_SIZE
 		if checkForBeat(irValue) == True:
 			# We sensed a beat!
-			print('B')
+			print('BEAT')
 			delta = ( millis() - lastBeat )
 			lastBeat = millis()	
 	
-			beatsPerMinute = 60 / (delta / 1000.0)		
+			beatsPerMinute = 60 / (delta / 1000.0)
+			beatsPerMinute = round(beatsPerMinute,1)
 	
 			if beatsPerMinute < 255 and beatsPerMinute > 20:
 				rateSpot += 1
-				rates[rateSpot] = beatsPerMinute # Store this reading in the array
 				rateSpot %= RATE_SIZE # Wrap variable
+				rates[rateSpot] = beatsPerMinute # Store this reading in the array
 
 				# Take average of readings
-				#beatAvg = 0
-				#for x in range(0, RATE_SIZE):
-				#	beatAvg += rates[x]
-				#beatAvg /= RATE_SIZE
+				beatAvg = 0
+				for x in range(0, RATE_SIZE):
+					beatAvg += rates[x]
+				beatAvg /= RATE_SIZE
+				beatAvg = round(beatAvg)
         
-		#message = ' ' # blank message, unless...
-		#if irValue < 50000:
-		#	message = ' No Finger?'
 		Hz = round(float(samplesTaken) / ( ( millis() - startTime ) / 1000.0 ) , 2)
 		if (samplesTaken % 200 ) == 0:
                         
 			print(\
-				'R[', irValue , '] \t',\
-            				#'BPM', beatsPerMinute , '\t',\
-                                                                                'DCE', getDCE() , '\t',\
-            				#'Avg BPM[', beatAvg , '] \t',\
-				'Hz', Hz\
-            				#message\
+				'IR=', irValue , '] \t',\
+            				'BPM=', beatsPerMinute , '\t',\
+                                                                                #'DCE', getDCE() , '\t',\
+            				'Avg=', beatAvg , '\t',\
+				'Hz=', Hz, \
 				)
 
 if __name__ == '__main__':
 	try:
 		runExample()
 	except (KeyboardInterrupt, SystemExit) as exErr:
-		print("\nEnding Example 1")
+		print("\nEnding Example 5")
 		sys.exit(0)
 
 

@@ -76,12 +76,16 @@ ir_avg_reg = 0
 cbuf = list(range(32))
 offset = 0
 
+
+
 FIRCoeffs = [172, 321, 579, 927, 1360, 1858, 2390, 2916, 3391, 3768, 4012, 4096]
 
 # Average DC Estimator
 def averageDCEstimator(p, x):
-    p += ( ( (x << 15) - p) >> 4)
-    return (p >> 15)
+    global ir_avg_reg
+    ir_avg_reg = p
+    ir_avg_reg += ( ( (x << 15) - ir_avg_reg) >> 4)
+    return (ir_avg_reg >> 15)
 
 # Integer multiplier
 def mul16(x, y):
