@@ -1,0 +1,4 @@
+m2r
+sparkfun-qwiic-i2c
+cairocffi
+matplotlib

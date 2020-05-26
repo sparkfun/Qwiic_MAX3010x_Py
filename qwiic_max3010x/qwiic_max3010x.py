@@ -71,6 +71,8 @@ import time
 from smbus2 import SMBus, i2c_msg
 _i2c_msg = i2c_msg
 
+from . import heart_rate
+
 # Define the device name and I2C addresses. These are set in the class defintion
 # as class variables, making them avilable without having to create a class instance.
 # This allows higher level logic to rapidly create a index of qwiic devices at

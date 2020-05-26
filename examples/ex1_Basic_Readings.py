@@ -53,7 +53,7 @@ import sys
 
 def runExample():
 
-	print("\nSparkFun MAX3010x Particle Sensor - Example 2\n")
+	print("\nSparkFun MAX3010x Particle Sensor - Example 1\n")
 	particleSensor = qwiic_max3010x.QwiicMax3010x()
 
 	if particleSensor.begin() == False:
