@@ -60,114 +60,107 @@
 #  
 # 
 
-IR_AC_Max = 20
-IR_AC_Min = -20
+# define the class that encapsulates the device being created. All information associated with this
+# device is encapsulated by this class. The device class should be the only value exported
+# from this module.
 
-IR_AC_Signal_Current = 0
-IR_AC_Signal_Previous = 0
-IR_AC_Signal_min = 0
-IR_AC_Signal_max = 0
-IR_Average_Estimated = 0
-
-positiveEdge = 0
-negativeEdge = 0
-ir_avg_reg = 0
-
-cbuf = list(range(32))
-offset = 0
-
-
-
-FIRCoeffs = [172, 321, 579, 927, 1360, 1858, 2390, 2916, 3391, 3768, 4012, 4096]
-
-# Average DC Estimator
-def averageDCEstimator(p, x):
-    global ir_avg_reg
-    ir_avg_reg = p
-    ir_avg_reg += ( ( (x << 15) - ir_avg_reg) >> 4)
-    return (ir_avg_reg >> 15)
-
-# Integer multiplier
-def mul16(x, y):
-    return (x * y)
+class HeartRate(object):
+    """
+    HeartRate
     
-# Low Pass FIR Filter
-def lowPassFIRFilter(din):
-    global offset
-    global cbuff
-    global FIRCoeffs
+        :return: The Heart Beat device object.
+        :rtype: Object
+    """
     
-    cbuf[offset] = din
+    IR_AC_Max = 20
+    IR_AC_Min = -20
 
-    z = mul16(FIRCoeffs[11], cbuf[(offset - 11) & 0x1F])
-  
-    for i in range(0,11):
-        z += mul16(FIRCoeffs[i], cbuf[(offset - i) & 0x1F] + cbuf[(offset - 22 + i) & 0x1F])
+    IR_AC_Signal_Current = 0
+    IR_AC_Signal_Previous = 0
+    IR_AC_Signal_min = 0
+    IR_AC_Signal_max = 0
+    IR_Average_Estimated = 0
 
-    offset += 1
-    offset %= 32 #Wrap condition
+    positiveEdge = 0
+    negativeEdge = 0
+    ir_avg_reg = 0
 
-    return (z >> 15)
+    cbuff = list(range(32))
+    offset = 0
 
-def getDCE():
-    global IR_Average_Estimated
-    return IR_Average_Estimated
+    FIRCoeffs = [172, 321, 579, 927, 1360, 1858, 2390, 2916, 3391, 3768, 4012, 4096]
 
-#  Heart Rate Monitor functions takes a sample value and the sample number
-#  Returns True if a beat is detected
-#  A running average of four samples is recommended for display on the screen.
-def checkForBeat(sample):
-    beatDetected = False
+    # Average DC Estimator
+    def averageDCEstimator(self,p, x):
+        self.ir_avg_reg = p
+        self.ir_avg_reg += ( ( (x << 15) - self.ir_avg_reg) >> 4)
+        return (self.ir_avg_reg >> 15)
 
-    global IR_AC_Max
-    global IR_AC_Min
-    global IR_AC_Signal_Current
-    global IR_AC_Signal_Previous
-    global IR_AC_Signal_min
-    global IR_AC_Signal_max
-    global IR_Average_Estimated
-    global positiveEdge
-    global negativeEdge
-    global ir_avg_reg
-    
-    #  Save current state
+    # Integer multiplier
+    def mul16(self,x, y):
+        return (x * y)
+        
+    # Low Pass FIR Filter
+    def lowPassFIRFilter(self,din):
+        
+        self.cbuff[self.offset] = din
 
-    IR_AC_Signal_Previous = IR_AC_Signal_Current
-  
-    #This is good to view for debugging
-    #Serial.print("Signal_Current: ")
-    #Serial.println(IR_AC_Signal_Current)
+        z = self.mul16(self.FIRCoeffs[11], self.cbuff[(self.offset - 11) & 0x1F])
+      
+        for i in range(0,11):
+            z += self.mul16(self.FIRCoeffs[i], self.cbuff[(self.offset - i) & 0x1F] + self.cbuff[(self.offset - 22 + i) & 0x1F])
 
-    # Process next data sample
-    IR_Average_Estimated = averageDCEstimator(ir_avg_reg, sample)
-    IR_AC_Signal_Current = lowPassFIRFilter(sample - IR_Average_Estimated)
+        self.offset += 1
+        self.offset %= 32 #Wrap condition
 
-    # Detect positive zero crossing (rising edge)
-    if ((IR_AC_Signal_Previous < 0) & (IR_AC_Signal_Current >= 0)):
-        IR_AC_Max = IR_AC_Signal_max #Adjust our AC max and min
-        IR_AC_Min = IR_AC_Signal_min
+        return (z >> 15)
 
-        positiveEdge = 1
-        negativeEdge = 0
-        IR_AC_Signal_max = 0
+    def getDCE(self):
+        return self.IR_Average_Estimated
 
-        #if ((IR_AC_Max - IR_AC_Min) > 100 & (IR_AC_Max - IR_AC_Min) < 1000)
-        if ((IR_AC_Max - IR_AC_Min) > 20 & (IR_AC_Max - IR_AC_Min) < 1000):
-            #Heart beat!!!
-            beatDetected = True
+    #  Heart Rate Monitor functions takes a sample value and the sample number
+    #  Returns True if a beat is detected
+    #  A running average of four samples is recommended for display on the screen.
+    def checkForBeat(self, sample):
+        beatDetected = False
+        
+        #  Save current state
+        self.IR_AC_Signal_Previous = self.IR_AC_Signal_Current
+      
+        #This is good to view for debugging
+        #Serial.print("Signal_Current: ")
+        #Serial.println(self.IR_AC_Signal_Current)
 
-    # Detect negative zero crossing (falling edge)
-    if ((IR_AC_Signal_Previous > 0) & (IR_AC_Signal_Current <= 0)):
-        positiveEdge = 0
-        negativeEdge = 1
-        IR_AC_Signal_min = 0
+        # Process next data sample
+        self.IR_Average_Estimated = self.averageDCEstimator(self.ir_avg_reg, sample)
+        self.IR_AC_Signal_Current = self.lowPassFIRFilter(sample - self.IR_Average_Estimated)
 
-    # Find Maximum value in positive cycle
-    if (positiveEdge & (IR_AC_Signal_Current > IR_AC_Signal_Previous)):
-        IR_AC_Signal_max = IR_AC_Signal_Current
+        # Detect positive zero crossing (rising edge)
+        if ((self.IR_AC_Signal_Previous < 0) & (self.IR_AC_Signal_Current >= 0)):
+            self.IR_AC_Max = self.IR_AC_Signal_max #Adjust our AC max and min
+            self.IR_AC_Min = self.IR_AC_Signal_min
 
-    # Find Minimum value in negative cycle
-    if (negativeEdge & (IR_AC_Signal_Current < IR_AC_Signal_Previous)):
-        IR_AC_Signal_min = IR_AC_Signal_Current
-  
-    return beatDetected
+            self.positiveEdge = 1
+            self.negativeEdge = 0
+            self.IR_AC_Signal_max = 0
+
+            #if ((self.IR_AC_Max - self.IR_AC_Min) > 100 & (self.IR_AC_Max - self.IR_AC_Min) < 1000)
+            if ((self.IR_AC_Max - self.IR_AC_Min) > 20 & (self.IR_AC_Max - self.IR_AC_Min) < 1000):
+                #Heart beat!!!
+                beatDetected = True
+
+        # Detect negative zero crossing (falling edge)
+        if ((self.IR_AC_Signal_Previous > 0) & (self.IR_AC_Signal_Current <= 0)):
+            self.positiveEdge = 0
+            self.negativeEdge = 1
+            self.IR_AC_Signal_min = 0
+
+        # Find Maximum value in positive cycle
+        if (self.positiveEdge & (self.IR_AC_Signal_Current > self.IR_AC_Signal_Previous)):
+            self.IR_AC_Signal_max = self.IR_AC_Signal_Current
+
+        # Find Minimum value in negative cycle
+        if (self.negativeEdge & (self.IR_AC_Signal_Current < self.IR_AC_Signal_Previous)):
+            self.IR_AC_Signal_min = self.IR_AC_Signal_Current
+      
+        return beatDetected

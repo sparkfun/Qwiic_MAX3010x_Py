@@ -56,18 +56,9 @@ from __future__ import print_function
 import qwiic_max3010x
 import time
 import sys
-from heartRate import *
+import heartRate
 
-RATE_SIZE = 4 # Increase this for more averaging. 4 is good.
-rates = list(range(RATE_SIZE)) # list of heart rates
-rateSpot = 0
-lastBeat = 0 # Time at which the last beat occurred
 
-beatsPerMinute = 0.00
-beatAvg = 0
-
-samplesTaken = 0 # Counter for calculating the Hz or read rate
-startTime = 0 # Used to calculate measurement rate
 
 def millis():
 	return int(round(time.time() * 1000))
@@ -95,22 +86,22 @@ def runExample():
 
 	particleSensor.setPulseAmplitudeRed(0x0A) # Turn Red LED to low to indicate sensor is running
 	particleSensor.setPulseAmplitudeGreen(0) # Turn off Green LED
-	global beatsPerMinute
-	global beatAvg
-	global startTime
-	global samplesTaken
-	startTime = millis()
+
+	hr = heartRate.HeartRate()
+	RATE_SIZE = 4 # Increase this for more averaging. 4 is good.
+	rates = list(range(RATE_SIZE)) # list of heart rates
+	rateSpot = 0
+	lastBeat = 0 # Time at which the last beat occurred
+	beatsPerMinute = 0.00
+	beatAvg = 0
+	samplesTaken = 0 # Counter for calculating the Hz or read rate
+	startTime = millis() # Used to calculate measurement rate
 	
 	while True:
                 
 		irValue = particleSensor.getIR()
 		samplesTaken += 1
-		global IR_Average_Estimated
-		global lastBeat
-		global rateSpot
-		global rates
-		global RATE_SIZE
-		if checkForBeat(irValue) == True:
+		if hr.checkForBeat(irValue) == True:
 			# We sensed a beat!
 			print('BEAT')
 			delta = ( millis() - lastBeat )
