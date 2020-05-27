@@ -250,6 +250,7 @@ class QwiicMax3010x(object):
     numberOfSamples = 0
 
     # Constructor
+
     def __init__(self, address=None, i2c_driver=None):
 
         # Did the user specify an I2C address?
@@ -283,6 +284,24 @@ class QwiicMax3010x(object):
     connected = property(is_connected)
 
     # ----------------------------------
+    # begin()
+    #
+    # Initialize the system/validate the board.
+
+    def begin(self):
+        """
+            Initialize the operation of the Qwiic MAX3010x module
+
+            :return: Returns true of the initializtion was successful, otherwise False.
+            :rtype: bool
+
+        """
+
+        # Basically return True if we are connected...
+
+        return self.is_connected()
+
+    # ----------------------------------
     # bit_mask()
     #
     # Given a register, read it, mask it, and then set the thing
@@ -290,6 +309,10 @@ class QwiicMax3010x(object):
     def bit_mask(self, reg, mask, thing):
         """
             Given a register, read it, mask it, and then set the thing
+
+            :param reg: the register you'd like to effect
+            :param mask: the mask needed to zero-out the portion of the register we're interested in
+            :param thing: the thing we are affecting aka the control bits of the register
 
             :return: Returns true of the register write was successful, otherwise False.
             :rtype: bool
@@ -354,96 +377,365 @@ class QwiicMax3010x(object):
     # 
 
     # Begin Interrupt configuration
+
+    # ----------------------------------
+    # getINT1()
+    #
+    # Returns the value of the INTSTAT1 Register
+
     def getINT1(self):
+        """
+            Returns the value of the INTSTAT1 Register
+
+            :return: value of the INTSTAT1 Register
+            :rtype: integer
+        """
         return self._i2c.readByte(self.address, MAX30105_INTSTAT1)
 
+    # ----------------------------------
+    # getINT2()
+    #
+    # Returns the value of the INTSTAT2 Register
+
     def getINT2(self):
+        """
+            Returns the value of the INTSTAT2 Register
+
+            :return: value of the INTSTAT2 Register
+            :rtype: integer
+        """
         return self._i2c.readByte(self.address, MAX30105_INTSTAT2)
 
+    # ----------------------------------
+    # enableAFULL()
+    #
+    # Enable AFULL Interrupt
+
     def enableAFULL(self):
+        """
+            Enable AFULL Interrupt
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_A_FULL_MASK, MAX30105_INT_A_FULL_ENABLE)
 
+    # ----------------------------------
+    # disableAFULL()
+    #
+    # Disable AFULL Interrupt
+
     def disableAFULL(self):
+        """
+            Disable AFULL Interrupt
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_A_FULL_MASK, MAX30105_INT_A_FULL_DISABLE)
 
+    # ----------------------------------
+    # enableDATARDY()
+    #
+    # Enable DATARDY Interrupt
+
     def enableDATARDY(self):
+        """
+            Enable DATARDY Interrupt
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_DATA_RDY_MASK, MAX30105_INT_DATA_RDY_ENABLE)
 
+    # ----------------------------------
+    # disableDATARDY()
+    #
+    # Disable DATARDY Interrupt
+
     def disableDATARDY(self):
+        """
+            Disable DATARDY Interrupt
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_DATA_RDY_MASK, MAX30105_INT_DATA_RDY_DISABLE)
 
+    # ----------------------------------
+    # enableALCOVF()
+    #
+    # Enable ALCOVF Interrupt
+
     def enableALCOVF(self):
+        """
+            Enable ALCOVF Interrupt
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_ALC_OVF_MASK, MAX30105_INT_ALC_OVF_ENABLE)
 
+    # ----------------------------------
+    # disableALCOVF()
+    #
+    # Disable ALCOVF Interrupt
+
     def disableALCOVF(self):
+        """
+            Disable ALCOVF Interrupt
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_ALC_OVF_MASK, MAX30105_INT_ALC_OVF_DISABLE)
 
+    # ----------------------------------
+    # enablePROXINT()
+    #
+    # Enable PROXINT Interrupt
+
     def enablePROXINT(self):
+        """
+            Enable PROXINT Interrupt
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_PROX_INT_MASK, MAX30105_INT_PROX_INT_ENABLE)
 
+    # ----------------------------------
+    # disablePROXINT()
+    #
+    # Disable PROXINT Interrupt
+
     def disablePROXINT(self):
+        """
+            Disable PROXINT Interrupt
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_INTENABLE1, MAX30105_INT_PROX_INT_MASK, MAX30105_INT_PROX_INT_DISABLE)
 
+    # ----------------------------------
+    # enableDIETEMPRDY()
+    #
+    # Enable DIETEMPRDY Interrupt
+
     def enableDIETEMPRDY(self):
+        """
+            Enable DIETEMPRDY Interrupt
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_INTENABLE2, MAX30105_INT_DIE_TEMP_RDY_MASK, MAX30105_INT_DIE_TEMP_RDY_ENABLE)
 
+    # ----------------------------------
+    # disableDIETEMPRDY()
+    #
+    # Disable DIETEMPRDY Interrupt
+
     def disableDIETEMPRDY(self):
+        """
+            Disable DIETEMPRDY Interrupt
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_INTENABLE2, MAX30105_INT_DIE_TEMP_RDY_MASK, MAX30105_INT_DIE_TEMP_RDY_DISABLE)
 
     # End Interrupt configuration        
 
+    # ----------------------------------
+    # shutDown()
+    #
+    # Put IC into low power mode (datasheet pg. 19)
+    # During shutdown the IC will continue to respond to I2C commands but will
+    # not update with or take new readings (such as temperature)
+
     def shutDown(self):
-        # Put IC into low power mode (datasheet pg. 19)
-        # During shutdown the IC will continue to respond to I2C commands but will
-        # not update with or take new readings (such as temperature)
+        """
+            Put IC into low power mode
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_MODECONFIG, MAX30105_SHUTDOWN_MASK, MAX30105_SHUTDOWN)
 
+    # ----------------------------------
+    # wakeUp()
+    #
+    # Pull IC out of low power mode (datasheet pg. 19)
+
     def wakeUp(self):
-        # Pull IC out of low power mode (datasheet pg. 19)
+        """
+            Pull IC out of low power mode
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_MODECONFIG, MAX30105_SHUTDOWN_MASK, MAX30105_WAKEUP)
 
+    # ----------------------------------
+    # setLEDMode()
+    #
+    # Set which LEDs are used for sampling - Red only, RED+IR only, or custom.
+    # See datasheet, page 19
+
     def setLEDMode(self, mode):
-        # Set which LEDs are used for sampling -- Red only, RED+IR only, or custom.
-        # See datasheet, page 19
+        """
+            Set which LEDs are used for sampling - Red only, RED+IR only, or custom
+
+            :param mode: Red only, RED+IR only, or custom
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_MODECONFIG, MAX30105_MODE_MASK, mode)
 
+    # ----------------------------------
+    # setADCRange()
+    #
+    # Set adcRange: one of MAX30105_ADCRANGE_2048, _4096, _8192, _16384
+
     def setADCRange(self, adcRange):
-        # adcRange: one of MAX30105_ADCRANGE_2048, _4096, _8192, _16384
+        """
+            Set adcRange: one of MAX30105_ADCRANGE_2048, _4096, _8192, _16384
+
+            :param adcRange: MAX30105_ADCRANGE_2048, _4096, _8192, _16384
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_PARTICLECONFIG, MAX30105_ADCRANGE_MASK, adcRange)
 
+    # ----------------------------------
+    # setSampleRate()
+    #
+    # Set sampleRate: one of MAX30105_SAMPLERATE_50, _100, _200, _400, _800, _1000, _1600, _3200
+
     def setSampleRate(self, sampleRate):
-        # sampleRate: one of MAX30105_SAMPLERATE_50, _100, _200, _400, _800, _1000, _1600, _3200
+        """
+            Set sampleRate: one of MAX30105_SAMPLERATE_50, _100, _200, _400, _800, _1000, _1600, _3200
+
+            :param sampleRate: MAX30105_SAMPLERATE_50, _100, _200, _400, _800, _1000, _1600, _3200
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_PARTICLECONFIG, MAX30105_SAMPLERATE_MASK, sampleRate)
 
+    # ----------------------------------
+    # setPulseWidth()
+    #
+    # Set pulseWidth: one of MAX30105_PULSEWIDTH_69, _188, _215, _411
+
     def setPulseWidth(self, pulseWidth):
-        # pulseWidth: one of MAX30105_PULSEWIDTH_69, _188, _215, _411
+        """
+            Set pulseWidth: one of MAX30105_PULSEWIDTH_69, _188, _215, _411
+
+            :param pulseWidth: MAX30105_PULSEWIDTH_69, _188, _215, _411
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_PARTICLECONFIG, MAX30105_PULSEWIDTH_MASK, pulseWidth)
 
-    # NOTE: Amplitude values: 0x00 = 0mA, 0x7F = 25.4mA, 0xFF = 50mA (typical)
+    # ----------------------------------
+    # setPulseAmplitudeRed()
+    #
+    # Set pulse amplitude (mA) of red LED
+    # 0x00 = 0mA, 0x7F = 25.4mA, 0xFF = 50mA (typical)
     # See datasheet, page 21
+
     def setPulseAmplitudeRed(self, amplitude):
+        """
+            Set pulse amplitude (mA) of red LED
+
+            :param amplitude: 0x00 = 0mA, 0x7F = 25.4mA, 0xFF = 50mA (typical)
+
+            :return: no return value
+        """
         self._i2c.writeByte(self.address, MAX30105_LED1_PULSEAMP, amplitude)
 
+    # ----------------------------------
+    # setPulseAmplitudeIR()
+    #
+    # Set pulse amplitude (mA) of IR LED
+    # 0x00 = 0mA, 0x7F = 25.4mA, 0xFF = 50mA (typical)
+    # See datasheet, page 21
+
     def setPulseAmplitudeIR(self, amplitude):
+        """
+            Set pulse amplitude (mA) of IR LED
+
+            :param amplitude: 0x00 = 0mA, 0x7F = 25.4mA, 0xFF = 50mA (typical)
+
+            :return: no return value
+        """
         self._i2c.writeByte(self.address, MAX30105_LED2_PULSEAMP, amplitude)
 
+    # ----------------------------------
+    # setPulseAmplitudeGreen()
+    #
+    # Set pulse amplitude (mA) of green LED
+    # 0x00 = 0mA, 0x7F = 25.4mA, 0xFF = 50mA (typical)
+    # See datasheet, page 21
+
     def setPulseAmplitudeGreen(self, amplitude):
+        """
+            Set pulse amplitude (mA) of green LED
+
+            :param amplitude: 0x00 = 0mA, 0x7F = 25.4mA, 0xFF = 50mA (typical)
+
+            :return: no return value
+        """
         self._i2c.writeByte(self.address, MAX30105_LED3_PULSEAMP, amplitude)
 
+    # ----------------------------------
+    # setPulseAmplitudeProximity()
+    #
+    # Set pulse aplitude while in proximity mode (only MAX30105)
+    # Note, this is specific to the MAX30105, and not included in the MAX30101
+
     def setPulseAmplitudeProximity(self, amplitude):
+        """
+            Set pulse aplitude while in proximity mode (only MAX30105)
+            Note, this is specific to the MAX30105, and not included in the MAX30101
+
+            :param amplitude: amplitude
+
+            :return: no return value
+        """
         self._i2c.writeByte(self.address, MAX30105_LED_PROX_AMP, amplitude)
 
+    # ----------------------------------
+    # setProximityThreshold()
+    #
+    # Set the IR ADC count that will trigger the beginning of particle-sensing mode.
+    # The threshMSB signifies only the 8 most significant-bits of the ADC count.
+    # Note, this is specific to the MAX30105, and not included in the MAX30101
+    # See datasheet, page 24.
+
     def setProximityThreshold(self, threshMSB):
-        # Set the IR ADC count that will trigger the beginning of particle-sensing mode.
-        # The threshMSB signifies only the 8 most significant-bits of the ADC count.
-        # See datasheet, page 24.
+        """
+            Set the IR ADC count that will trigger the beginning of particle-sensing mode.
+            The threshMSB signifies only the 8 most significant-bits of the ADC count.
+            Note, this is specific to the MAX30105, and not included in the MAX30101
+
+            :param threshMSB: threshold of ADC count to cause trigger
+
+            :return: no return value
+        """
         self._i2c.writeByte(self.address, MAX30105_PROXINTTHRESH, threshMSB)     
 
-    #Given a slot number assign a thing to it
-    #Devices are SLOT_RED_LED or SLOT_RED_PILOT (proximity)
-    #Assigning a SLOT_RED_LED will pulse LED
-    #Assigning a SLOT_RED_PILOT will ??
+    #
+    # enableSlot()
+    #
+    # Given a slot number assign a thing to it
+    # Devices are SLOT_RED_LED or SLOT_RED_PILOT (proximity)
+    # Assigning a SLOT_RED_LED will pulse LED
+    # Assigning a SLOT_RED_PILOT will ??
+
     def enableSlot(self, slotNumber, device):
+        """
+            Given a slot number assign a thing to it
+            Devices are SLOT_RED_LED or SLOT_RED_PILOT (proximity)
+            Assigning a SLOT_RED_LED will pulse LED
+            Assigning a SLOT_RED_PILOT will ??
+
+            :param slotNumber: slot number as int 1,2,3,4
+            :param device: which device (aka led) you'd like to assign to the given slot
+
+            :return: Whether or not the configuration write was successful
+            :rtype: bool
+        """
         if slotNumber == 1:
             return self.bit_mask(MAX30105_MULTILEDCONFIG1, MAX30105_SLOT1_MASK, device)
         elif slotNumber == 2:
@@ -455,8 +747,17 @@ class QwiicMax3010x(object):
         else:
             return False #Shouldn't be here!
   
-    #Clears all slot assignments
+    #
+    # disableSlots()
+    # 
+    # Clears all slot assignments
+
     def disableSlots(self):
+        """
+            Clears all slot assignments
+
+            :return: no return value
+        """
         self._i2c.writeByte(self.address, MAX30105_MULTILEDCONFIG1, 0)
         self._i2c.writeByte(self.address, MAX30105_MULTILEDCONFIG2, 0)
 
@@ -464,37 +765,106 @@ class QwiicMax3010x(object):
     # FIFO Configuration
     #
 
-    #Set sample average (Table 3, Page 18)
+    # 
+    # setFIFOAverage()
+    #
+    # Set sample average (Table 3, Page 18)
+
     def setFIFOAverage(self, numberOfSamples):
+        """
+            Set sample average
+
+            :param numberOfSamples: MAX30105_SAMPLEAVG_1, _2, _4, _8, _16, _32
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_FIFOCONFIG, MAX30105_SAMPLEAVG_MASK, numberOfSamples)
 
-    #Resets all points to start in a known state
-    #Page 15 recommends clearing FIFO before beginning a read
+    #
+    # clearFIFO()
+    #
+    # Resets all points to start in a known state
+    # Page 15 recommends clearing FIFO before beginning a read
+
     def clearFIFO(self):
+        """
+            Resets all points to start in a known state
+
+            :return: no return value
+        """
         self._i2c.writeByte(self.address, MAX30105_FIFOWRITEPTR, 0)
         self._i2c.writeByte(self.address, MAX30105_FIFOOVERFLOW, 0)
         self._i2c.writeByte(self.address, MAX30105_FIFOREADPTR, 0)
 
-    #Enable roll over if FIFO over flows
+    # 
+    # enableFIFORollover()
+    # 
+    # Enable roll over if FIFO over flows
+
     def enableFIFORollover(self):
+        """
+            Enable roll over if FIFO over flows
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_FIFOCONFIG, MAX30105_ROLLOVER_MASK, MAX30105_ROLLOVER_ENABLE)
 
-    #Disable roll over if FIFO over flows
+    # 
+    # disableFIFORollover()
+    # 
+    # Disable roll over if FIFO over flows
+
     def disableFIFORollover(self):
+        """
+            Disable roll over if FIFO over flows
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_FIFOCONFIG, MAX30105_ROLLOVER_MASK, MAX30105_ROLLOVER_DISABLE)
 
-    #Set number of samples to trigger the almost full interrupt (Page 18)
-    #Power on default is 32 samples
-    #Note it is reverse: 0x00 is 32 samples, 0x0F is 17 samples
+    # 
+    # setFIFOAlmostFull()
+    # 
+    # Set number of samples to trigger the almost full interrupt (Page 18)
+    # Power on default is 32 samples
+    # Note it is reverse: 0x00 is 32 samples, 0x0F is 17 samples
+
     def setFIFOAlmostFull(self, numberOfSamples):
+        """
+            Set number of samples to trigger the almost full interrupt
+
+            :param numberOfSamples: default is 32 samples. Note it's reverse (0x00 is 32 samples, 0x0F is 17 samples)
+
+            :return: no return value
+        """
         self.bit_mask(MAX30105_FIFOCONFIG, MAX30105_A_FULL_MASK, numberOfSamples)
 
-    #Read the FIFO Write Pointer
+    # 
+    # getWritePointer()
+    # 
+    # Read the FIFO Write Pointer
+
     def getWritePointer(self):
+        """
+            Read the FIFO Write Pointer
+
+            :return: FIFO write pointer value
+            :rtype: integer
+        """
         return self._i2c.readByte(self.address, MAX30105_FIFOWRITEPTR)
 
-    #Read the FIFO Read Pointer
+    # 
+    # getReadPointer()
+    # 
+    # Read the FIFO Read Pointer
+    
     def getReadPointer(self):
+        """
+            Read the FIFO Read Pointer
+
+            :return: FIFO read pointer value
+            :rtype: integer
+        """
         return self._i2c.readByte(self.address, MAX30105_FIFOREADPTR)
 
     # ----------------------------------
@@ -512,10 +882,16 @@ class QwiicMax3010x(object):
 
     def setup(self, powerLevel = 0x1F, sampleAverage = 4, ledMode = 3, sampleRate = 400, pulseWidth = 411, adcRange = 4096):
         """
-            Setup the MAX3010x with default settings
+            Setup the MAX3010x with default or custom settings
 
-            :return: Returns true of the register write was successful, otherwise False.
-            :rtype: bool
+            :param powerLevel: 0x00 = 0mA, 0x7F = 25.4mA, 0xFF = 50mA
+            :param sampleAverage: int, 1,2,4,8,16,32, default is 4
+            :param ledMode: 1 = RED, 2=RED+IR , 3=RED+IR+GREEN
+            :param sampleRate: 0-3200
+            :param pulseWidth: 0-411 (microseconds)
+            :param adcRange: 2048,4096,8192,16384
+
+            :return: no return value
 
         """
         self.softReset() # Reset all configuration, threshold, and data registers to POR values
@@ -628,46 +1004,61 @@ class QwiicMax3010x(object):
 
         self.clearFIFO() # Reset the FIFO before we begin checking the sensor
 
-    # ----------------------------------
-    # begin()
-    #
-    # Initialize the system/validate the board.
-    def begin(self):
-        """
-            Initialize the operation of the Qwiic MAX3010x module
-
-            :return: Returns true of the initializtion was successful, otherwise False.
-            :rtype: bool
-
-        """
-
-        # Basically return True if we are connected...
-
-        return self.is_connected()
-
 
     #
     # Data Collection
     #
 
-    #Tell caller how many samples are available
+    # 
+    # available()
+    # 
+    # Tell caller how many samples are available
+
     def available(self):
+        """
+            Tell caller how many samples are available
+
+            :return: number of samples available
+            :rtype: integer
+        """
         numberOfSamples = self.head - self.tail
         if numberOfSamples < 0:
             numberOfSamples += self.STORAGE_SIZE
         return numberOfSamples
 
-    #Advance the tail
+    # 
+    # nextSample()
+    # 
+    # Advance the tail
+
     def nextSample(self):
+        """
+            Advance the tail
+
+            :return: no return value
+        """
         if available(): #Only advance the tail if new data is available
             self.tail += 1
             self.tail %= STORAGE_SIZE #Wrap condition
 
+    # 
+    # check()
+    # 
     # Polls the sensor for new data
     # Call regularly
     # If new data is available, it updates the head and tail in the main lists of data
     # Returns number of new samples obtained
+
     def check(self):
+        """
+            Polls the sensor for new data
+            Call regularly
+            If new data is available, it updates the head and tail in the main lists of data
+
+            :return: number of new samples obtained
+            :rtype: integer
+        """
+
         # Read register FIDO_DATA (3-byte * number of active LED)
         # Until FIFO_RD_PTR = FIFO_WR_PTR
 
@@ -755,10 +1146,24 @@ class QwiicMax3010x(object):
 
         return numberOfSamples #Let the world know how much new data we found
 
+    # 
+    # safeCheck()
+    # 
     # Check for new data but give up after a certain amount of time
     # Returns true if new data was found
     # Returns false if new data was not found
+
     def safeCheck(self, maxTimeToCheck):
+        """
+            Check for new data but give up after a certain amount of time
+            Returns true if new data was found
+            Returns false if new data was not found
+
+            :param maxTimeToCheck: milliseconds to timeout
+
+            :return: True if new data was found, otherwise False
+            :rtype: boolean
+        """
         timeout = maxTimeToCheck
         while(timeout):
             if(self.check() > 0): #We found new data!
@@ -767,61 +1172,161 @@ class QwiicMax3010x(object):
             timeout -= 1
         return False
 
-    #Report the most recent red value
+    # 
+    # getRed()
+    # 
+    # Report the most recent red value
+
     def getRed(self):
+        """
+            Report the most recent red value
+
+            :return: value of RED light sensor from most recent sample
+            :rtype: integer
+        """
         #Check the sensor for new data for 250ms
         if self.safeCheck(250):
             return self.red[self.head]
         else:
             return 0 #Sensor failed to find new data
 
-    #Report the most recent IR value
+    # 
+    # getIR()
+    # 
+    # Report the most recent IR value
+
     def getIR(self):
+        """
+            Report the most recent IR value
+
+            :return: value of IR light sensor from most recent sample
+            :rtype: integer
+        """
         #Check the sensor for new data for 250ms
         if self.safeCheck(250):
             return (self.IR[self.head])
         else:
             return 0 #Sensor failed to find new data
 
-    #Report the most recent Green value
+    # 
+    # getGreen()
+    # 
+    # Report the most recent Green value
+
     def getGreen(self):
+        """
+            Report the most recent GREEN value
+
+            :return: value of GREEN light sensor from most recent sample
+            :rtype: integer
+        """
         #Check the sensor for new data for 250ms
         if self.safeCheck(250):
             return self.green[self.head]
         else:
             return 0 #Sensor failed to find new data
 
-    #Report the next Red value in the FIFO
+    # 
+    # getFIFORed()
+    # 
+    # Report the next Red value in the FIFO
+
     def getFIFORed(self):
+        """
+            Report the next Red value in the FIFO
+
+            :return: the next Red value in the FIFO
+            :rtype: integer
+        """
         return self.red[self.tail]
 
-    #Report the next IR value in the FIFO
+    # 
+    # getFIFOIR()
+    # 
+    # Report the next IR value in the FIFO
+
     def getFIFOIR(self):
+        """
+            Report the next IR value in the FIFO
+
+            :return: the next IR value in the FIFO
+            :rtype: integer
+        """
         return self.IR[self.tail]
 
-    #Report the next Green value in the FIFO
+    # 
+    # getFIFOGreen()
+    # 
+    # Report the next Green value in the FIFO
+
     def getFIFOGreen(self):
+        """
+            Report the next Green value in the FIFO
+
+            :return: the next Green value in the FIFO
+            :rtype: integer
+        """
         return self.green[self.tail]
 
     #
     # Device ID and Revision
     #
 
+    # 
+    # readPartID()
+    #
+    # Report Part ID from the sensor
+
     def readPartID(self):
+        """
+            Report Part ID from the sensor
+
+            :return: Part ID
+            :rtype: integer
+        """
         return self._i2c.readByte(self.address, MAX30105_PARTID)
 
+    # 
+    # readRevisionID()
+    #
+    # Report Revision ID from the sensor
+
     def readRevisionID(self):
+        """
+            Report Revision ID from the sensor
+
+            :return: Revision ID
+            :rtype: integer
+        """
         self.revisionID = self._i2c.readByte(self.address, MAX30105_REVISIONID)
 
+    # 
+    # getRevisionID()
+    #
+    # Report Revision ID from current variable in this class
+
     def getRevisionID(self):
+        """
+            Report Revision ID from current variable in this class
+
+            :return: Revision ID
+            :rtype: integer
+        """
         return self.revisionID
 
     #
-    # Die Temperature
-    # Returns temp in C
+    # readTemperature()
+    #
+    # Read Die Temperature in C
     #
 
     def readTemperature(self):
+        """
+            Report Die Temperature in C
+
+            :return: die temp in C
+            :rtype: float
+        """
 
         # DIE_TEMP_RDY interrupt must be enabled
         # See issue 19: https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library/issues/19
@@ -850,10 +1355,18 @@ class QwiicMax3010x(object):
         return (tempInt + (tempFrac * 0.0625))
 
     #
+    # readTemperatureF()
+    #
     # Returns die temp in F
     #
 
     def readTemperatureF(self):
+        """
+            Returns die temp in F
+
+            :return: die temp in F
+            :rtype: float
+        """
         temp = self.readTemperature()
         if (temp != -999.0):
             temp = ( (temp * 1.8) + 32.0 )
