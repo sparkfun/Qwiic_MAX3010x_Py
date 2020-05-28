@@ -115,7 +115,7 @@ def animate(i, xs, ys):
     
 def runExample():
 
-	print("\nSparkFun MAX3010x Particle Sensor - Example 4\n")
+	print("\nSparkFun MAX3010x Photodetector - Example 4\n")
 
 	if particleSensor.begin() == False:
 		print("The Qwiic MAX3010x device isn't connected to the system. Please check your connection", \

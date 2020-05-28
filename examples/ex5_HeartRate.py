@@ -64,7 +64,7 @@ def millis():
 
 def runExample():
 
-	print("\nSparkFun MAX3010x Particle Sensor - Example 5\n")
+	print("\nSparkFun MAX3010x Photodetector - Example 5\n")
 	particleSensor = qwiic_max3010x.QwiicMax3010x()
 
 	if particleSensor.begin() == False:
