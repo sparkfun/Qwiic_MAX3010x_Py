@@ -1037,9 +1037,9 @@ class QwiicMax3010x(object):
 
             :return: no return value
         """
-        if available(): #Only advance the tail if new data is available
+        if self.available(): #Only advance the tail if new data is available
             self.tail += 1
-            self.tail %= STORAGE_SIZE #Wrap condition
+            self.tail %= self.STORAGE_SIZE #Wrap condition
 
     # 
     # check()
