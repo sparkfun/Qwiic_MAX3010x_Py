@@ -35,7 +35,7 @@ Table of Contents
    :caption: Other Links
 
 	SparkFun <https://sparkfun.com>
-   SparkFun Particle Sensor Breakout - MAX30101 (Qwiic) <https://www.sparkfun.com/products/16474>
+   SparkFun Photodetector Breakout - MAX30101 (Qwiic) <https://www.sparkfun.com/products/16474>
 	GitHub <https://github.com/sparkfun/Qwiic_MAX3010x_Py>
 	SparkFun qwiic <https://www.sparkfun.com/qwiic>
 

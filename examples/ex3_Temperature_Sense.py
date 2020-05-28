@@ -56,9 +56,9 @@ import sys
 def runExample():
 
 	print("\nSparkFun MAX3010x Photodetector - Example 3\n")
-	particleSensor = qwiic_max3010x.QwiicMax3010x()
+	sensor = qwiic_max3010x.QwiicMax3010x()
 
-	if particleSensor.begin() == False:
+	if sensor.begin() == False:
 		print("The Qwiic MAX3010x device isn't connected to the system. Please check your connection", \
 			file=sys.stderr)
 		return
@@ -69,18 +69,18 @@ def runExample():
     # The LEDs are very low power and won't affect the temp reading much but
     # we will call setup() with LEDs off, to avoid any local heating (ledMode = 0)
 
-	if particleSensor.setup(ledMode = 0) == False:
+	if sensor.setup(ledMode = 0) == False:
 		print("Device setup failure. Please check your connection", \
 			file=sys.stderr)
 		return
 	else:
 		print("Setup complete.")        
 
-	particleSensor.enableDIETEMPRDY() # Enable the temp ready interrupt. This is required.
+	sensor.enableDIETEMPRDY() # Enable the temp ready interrupt. This is required.
 
 	while True:
-			temperature = particleSensor.readTemperature()
-			temperatureF = particleSensor.readTemperatureF()
+			temperature = sensor.readTemperature()
+			temperatureF = sensor.readTemperatureF()
 
 			temperature = round(temperature, 4)
 			temperatureF = round(temperatureF, 4)

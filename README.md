@@ -20,7 +20,7 @@ Qwiic_MAX3010x_Py
 	
 </p>
 
-<img src="https://cdn.sparkfun.com//assets/parts/1/5/3/3/8/16474-SparkFun_Particle_Sensor_Breakout_-_MAX30101__Qwiic_-01.jpg"  align="right" width=300 alt="SparkFun Particle Sensor Breakout - MAX30101 (Qwiic)">
+<img src="https://cdn.sparkfun.com//assets/parts/1/5/3/3/8/16474-SparkFun_Particle_Sensor_Breakout_-_MAX30101__Qwiic_-01.jpg"  align="right" width=300 alt="SparkFun Photodetector Breakout - MAX30101 (Qwiic)">
 
 Python package for the [SparkFun Photodetector Breakout - MAX30101 (Qwiic)](https://www.sparkfun.com/products/16474)
 
@@ -102,16 +102,16 @@ import sys
 def runExample():
 
 	print("\nSparkFun MAX3010x Photodetector Sensor - Example 1\n")
-	particleSensor = qwiic_max3010x.QwiicMax3010x()
+	sensor = qwiic_max3010x.QwiicMax3010x()
 
-	if particleSensor.begin() == False:
+	if sensor.begin() == False:
 		print("The Qwiic MAX3010x device isn't connected to the system. Please check your connection", \
 			file=sys.stderr)
 		return
 	else:
 		print("The Qwiic MAX3010x is connected.")
 
-	if particleSensor.setup() == False:
+	if sensor.setup() == False:
 		print("Device setup failure. Please check your connection", \
 			file=sys.stderr)
 		return
@@ -120,9 +120,9 @@ def runExample():
 
 	while True:
 			print(\
-			 'R[', particleSensor.getRed() , '] \t'\
-             'IR[', particleSensor.getIR() , '] \t'\
-             'G[', particleSensor.getGreen() , ']'\
+			 'R[', sensor.getRed() , '] \t'\
+             'IR[', sensor.getIR() , '] \t'\
+             'G[', sensor.getGreen() , ']'\
 			)
 			time.sleep(0.1)
 

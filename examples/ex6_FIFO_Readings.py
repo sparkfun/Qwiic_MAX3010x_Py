@@ -59,9 +59,9 @@ def millis():
 def runExample():
 
 	print("\nSparkFun MAX3010x Photodetector - Example 6\n")
-	particleSensor = qwiic_max3010x.QwiicMax3010x()
+	sensor = qwiic_max3010x.QwiicMax3010x()
 
-	if particleSensor.begin() == False:
+	if sensor.begin() == False:
 		print("The Qwiic MAX3010x device isn't connected to the system. Please check your connection", \
 			file=sys.stderr)
 		return
@@ -76,7 +76,7 @@ def runExample():
 	pulseWidth = 411 # Options: 69, 118, 215, 411
 	adcRange = 2048 # Options: 2048, 4096, 8192, 16384
 
-	if particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange) == False:
+	if sensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange) == False:
 		print("Device setup failure. Please check your connection", \
 			file=sys.stderr)
 		return
@@ -88,9 +88,9 @@ def runExample():
 
 	while True:
 
-		particleSensor.check() # Check the sensor, read up to 3 samples
+		sensor.check() # Check the sensor, read up to 3 samples
 
-		while (particleSensor.available() > 0): # do we have new data?
+		while (sensor.available() > 0): # do we have new data?
 
 			samplesTaken += 1
 
@@ -98,13 +98,13 @@ def runExample():
 			hertz = round(hertz, 2)
 
 			print(\
-			'R[', particleSensor.getFIFORed() , '] \t'\
-			'IR[', particleSensor.getFIFOIR() , '] \t'\
-			'G[', particleSensor.getFIFOGreen() , '] \t'\
+			'R[', sensor.getFIFORed() , '] \t'\
+			'IR[', sensor.getFIFOIR() , '] \t'\
+			'G[', sensor.getFIFOGreen() , '] \t'\
 			'Hz[', hertz , ']'\
 			)
 			
-			particleSensor.nextSample() # We're finished with this sample so move to next sample
+			sensor.nextSample() # We're finished with this sample so move to next sample
 
 if __name__ == '__main__':
 	try:

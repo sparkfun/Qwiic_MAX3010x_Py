@@ -58,9 +58,9 @@ def millis():
 def runExample():
 
 	print("\nSparkFun MAX3010x Photodetector - Example 1\n")
-	particleSensor = qwiic_max3010x.QwiicMax3010x()
+	sensor = qwiic_max3010x.QwiicMax3010x()
 
-	if particleSensor.begin() == False:
+	if sensor.begin() == False:
 		print("The Qwiic MAX3010x device isn't connected to the system. Please check your connection", \
 			file=sys.stderr)
 		return
@@ -75,15 +75,15 @@ def runExample():
 	pulseWidth = 411 # Options: 69, 118, 215, 411
 	adcRange = 2048 # Options: 2048, 4096, 8192, 16384
 
-	if particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange) == False:
+	if sensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange) == False:
 		print("Device setup failure. Please check your connection", \
 			file=sys.stderr)
 		return
 	else:
 		print("Setup complete.")        
 
-	particleSensor.setPulseAmplitudeRed(0) # Turn off Red LED
-	particleSensor.setPulseAmplitudeGreen(0) # Turn off Green LED
+	sensor.setPulseAmplitudeRed(0) # Turn off Red LED
+	sensor.setPulseAmplitudeGreen(0) # Turn off Green LED
 
 	samplesTaken = 0       # Counter for calculating the Hz or read rate
 	unblockedValue = 0     # Average IR at power up
@@ -92,7 +92,7 @@ def runExample():
 	# Take an average of IR readings at power up
 	unblockedValue = 0
 	for i in range(0,32):
-		unblockedValue += particleSensor.getIR() # Read the IR value
+		unblockedValue += sensor.getIR() # Read the IR value
 	unblockedValue /= 32
 
 	startTime = millis()
@@ -101,7 +101,7 @@ def runExample():
 	while True:
 			samplesTaken += 1
 
-			IRSample = particleSensor.getIR()
+			IRSample = sensor.getIR()
 			hertz = samplesTaken / ((millis() - startTime) / 1000)
 			currentDelta = (IRSample - unblockedValue)
 

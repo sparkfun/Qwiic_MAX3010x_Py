@@ -81,7 +81,7 @@ import qwiic_max3010x
 import time
 import sys
 
-particleSensor = qwiic_max3010x.QwiicMax3010x()
+sensor = qwiic_max3010x.QwiicMax3010x()
 
 #Plotter Stuff
 import matplotlib.pyplot as plt
@@ -97,7 +97,7 @@ sample = 0 #sample number, increments and is used for labeling x axis in plot
 # This function is called periodically from FuncAnimation
 def animate(i, xs, ys):
     # Read IR from MAX3010x
-    ir = particleSensor.getIR()
+    ir = sensor.getIR()
     # Add x and y to lists
     global sample
     xs.append(sample)
@@ -117,7 +117,7 @@ def runExample():
 
 	print("\nSparkFun MAX3010x Photodetector - Example 4\n")
 
-	if particleSensor.begin() == False:
+	if sensor.begin() == False:
 		print("The Qwiic MAX3010x device isn't connected to the system. Please check your connection", \
 			file=sys.stderr)
 		return
@@ -132,7 +132,7 @@ def runExample():
 	pulseWidth = 411 # Options: 69, 118, 215, 411
 	adcRange = 4096 # Options: 2048, 4096, 8192, 16384
 
-	if particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange) == False:
+	if sensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange) == False:
 		print("Device setup failure. Please check your connection", \
 			file=sys.stderr)
 		return

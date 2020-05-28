@@ -98,6 +98,6 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    py_modules=["qwiic_max3010x", "heart_rate"],
+    packages=["qwiic_max3010x"],
 
 )

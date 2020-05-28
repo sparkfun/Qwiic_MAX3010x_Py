@@ -65,9 +65,9 @@ def millis():
 def runExample():
 
 	print("\nSparkFun MAX3010x Photodetector - Example 5\n")
-	particleSensor = qwiic_max3010x.QwiicMax3010x()
+	sensor = qwiic_max3010x.QwiicMax3010x()
 
-	if particleSensor.begin() == False:
+	if sensor.begin() == False:
 		print("The Qwiic MAX3010x device isn't connected to the system. Please check your connection", \
 			file=sys.stderr)
 		return
@@ -76,15 +76,15 @@ def runExample():
 
 	print("Place your index finger on the sensor with steady pressure.")
 
-	if particleSensor.setup() == False:
+	if sensor.setup() == False:
 		print("Device setup failure. Please check your connection", \
 			file=sys.stderr)
 		return
 	else:
 		print("Setup complete.")
 
-	particleSensor.setPulseAmplitudeRed(0x0A) # Turn Red LED to low to indicate sensor is running
-	particleSensor.setPulseAmplitudeGreen(0) # Turn off Green LED
+	sensor.setPulseAmplitudeRed(0x0A) # Turn Red LED to low to indicate sensor is running
+	sensor.setPulseAmplitudeGreen(0) # Turn off Green LED
 
 	hr = heartRate.HeartRate()
 	RATE_SIZE = 4 # Increase this for more averaging. 4 is good.
@@ -98,7 +98,7 @@ def runExample():
 	
 	while True:
                 
-		irValue = particleSensor.getIR()
+		irValue = sensor.getIR()
 		samplesTaken += 1
 		if hr.checkForBeat(irValue) == True:
 			# We sensed a beat!
