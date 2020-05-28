@@ -22,7 +22,7 @@ Qwiic_MAX3010x_Py
 
 <img src="https://cdn.sparkfun.com//assets/parts/1/5/3/3/8/16474-SparkFun_Particle_Sensor_Breakout_-_MAX30101__Qwiic_-01.jpg"  align="right" width=300 alt="SparkFun Particle Sensor Breakout - MAX30101 (Qwiic)">
 
-Python package for the [SparkFun Particle Sensor Breakout - MAX30101 (Qwiic)](https://www.sparkfun.com/products/16474)
+Python package for the [SparkFun Photodetector Breakout - MAX30101 (Qwiic)](https://www.sparkfun.com/products/16474)
 
 This package is a port of the existing [SparkFun MAX3010x Sensor Arduino Library](https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library)
 
@@ -101,7 +101,7 @@ import sys
 
 def runExample():
 
-	print("\nSparkFun MAX3010x Particle Sensor - Example 1\n")
+	print("\nSparkFun MAX3010x Photodetector Sensor - Example 1\n")
 	particleSensor = qwiic_max3010x.QwiicMax3010x()
 
 	if particleSensor.begin() == False:
