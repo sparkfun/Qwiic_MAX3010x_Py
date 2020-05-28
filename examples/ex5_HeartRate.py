@@ -57,8 +57,6 @@ import qwiic_max3010x
 import time
 import sys
 
-
-
 def millis():
 	return int(round(time.time() * 1000))
 
@@ -86,7 +84,6 @@ def runExample():
 	sensor.setPulseAmplitudeRed(0x0A) # Turn Red LED to low to indicate sensor is running
 	sensor.setPulseAmplitudeGreen(0) # Turn off Green LED
 
-	hr = heart_rate.HeartRate()
 	RATE_SIZE = 4 # Increase this for more averaging. 4 is good.
 	rates = list(range(RATE_SIZE)) # list of heart rates
 	rateSpot = 0
@@ -100,7 +97,7 @@ def runExample():
                 
 		irValue = sensor.getIR()
 		samplesTaken += 1
-		if hr.checkForBeat(irValue) == True:
+		if sensor.checkForBeat(irValue) == True:
 			# We sensed a beat!
 			print('BEAT')
 			delta = ( millis() - lastBeat )

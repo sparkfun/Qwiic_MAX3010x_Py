@@ -71,24 +71,25 @@ class HeartRate(object):
         :return: The Heart Beat device object.
         :rtype: Object
     """
-    
-    IR_AC_Max = 20
-    IR_AC_Min = -20
+    def __init__(self):
+        
+        self.IR_AC_Max = 20
+        self.IR_AC_Min = -20
 
-    IR_AC_Signal_Current = 0
-    IR_AC_Signal_Previous = 0
-    IR_AC_Signal_min = 0
-    IR_AC_Signal_max = 0
-    IR_Average_Estimated = 0
+        self.IR_AC_Signal_Current = 0
+        self.IR_AC_Signal_Previous = 0
+        self.IR_AC_Signal_min = 0
+        self.IR_AC_Signal_max = 0
+        self.IR_Average_Estimated = 0
 
-    positiveEdge = 0
-    negativeEdge = 0
-    ir_avg_reg = 0
+        self.positiveEdge = 0
+        self.negativeEdge = 0
+        self.ir_avg_reg = 0
 
-    cbuff = list(range(32))
-    offset = 0
+        self.cbuff = list(range(32))
+        self.offset = 0
 
-    FIRCoeffs = [172, 321, 579, 927, 1360, 1858, 2390, 2916, 3391, 3768, 4012, 4096]
+        self.FIRCoeffs = [172, 321, 579, 927, 1360, 1858, 2390, 2916, 3391, 3768, 4012, 4096]
 
     # Average DC Estimator
     def averageDCEstimator(self,p, x):
@@ -118,7 +119,7 @@ class HeartRate(object):
     def getDCE(self):
         return self.IR_Average_Estimated
 
-    #  Heart Rate Monitor functions takes a sample value and the sample number
+    #  Heart Rate Monitor functions takes a sample value
     #  Returns True if a beat is detected
     #  A running average of four samples is recommended for display on the screen.
     def checkForBeat(self, sample):

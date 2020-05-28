@@ -47,7 +47,7 @@
 """
 qwiic_max3010x
 =================
-Python module for the [SparkFun Particle Sensor Breakout - MAX30101 (Qwiic)](https://www.sparkfun.com/products/16474)
+Python module for the [SparkFun Photodetector Breakout - MAX30101 (Qwiic)](https://www.sparkfun.com/products/16474)
 
 This python package is a port of the existing [SparkFun MAX3010x Sensor Arduino Library](https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library)
 
@@ -57,7 +57,4 @@ New to qwiic? Take a look at the entire [SparkFun qwiic ecosystem](https://www.s
 
 """
 
-
-
 from .qwiic_max3010x import QwiicMax3010x
-from .heart_rate import HeartRate

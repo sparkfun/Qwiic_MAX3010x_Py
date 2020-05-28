@@ -72,6 +72,7 @@ from smbus2 import SMBus, i2c_msg
 _i2c_msg = i2c_msg
 
 from . import heart_rate
+hr = heart_rate.HeartRate()
 
 # Define the device name and I2C addresses. These are set in the class defintion
 # as class variables, making them avilable without having to create a class instance.
@@ -1371,3 +1372,19 @@ class QwiicMax3010x(object):
         if (temp != -999.0):
             temp = ( (temp * 1.8) + 32.0 )
         return temp
+
+    #
+    # checkForBeat()
+    #
+    # Wrapper function to allow access to function within supporting heart_rate.py file
+    #
+
+    def checkForBeat(self, sample):
+        """
+            Wrapper function to allow access to function within supporting heart_rate.py file
+
+            :param sample: IR sample
+            :return: True if a beat is detected, otherwise False
+            :rtype: boolean
+        """
+        return hr.checkForBeat(sample)
