@@ -122,7 +122,7 @@ def runExample():
 		if (samplesTaken % 200 ) == 0:
                         
 			print(\
-				'IR=', irValue , '] \t',\
+				'IR=', irValue , ' \t',\
             				'BPM=', beatsPerMinute , '\t',\
                                                                                 #'DCE', getDCE() , '\t',\
             				'Avg=', beatAvg , '\t',\
