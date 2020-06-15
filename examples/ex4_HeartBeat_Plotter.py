@@ -90,29 +90,26 @@ import matplotlib.animation as animation
 # Create figure for plotting
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
-xs = []
-ys = []
-sample = 0 #sample number, increments and is used for labeling x axis in plot
+xlen= 100 #sample number, increments and is used for labeling x axis in plot
+xs = list(range(0,xlen))
+ys = [0]*xlen
+line, = ax.plot(xs, ys)
+plt.title('Heartbeat over time')
+plt.ylabel('IR Value')
 
 # This function is called periodically from FuncAnimation
-def animate(i, xs, ys):
-    # Read IR from MAX3010x
-    ir = sensor.getIR()
-    # Add x and y to lists
-    global sample
-    xs.append(sample)
-    ys.append(ir)
-    # Limit x and y lists to 40 items
-    xs = xs[-40:]
-    ys = ys[-40:]
-    # Draw x and y lists
-    ax.clear()
-    ax.plot(xs, ys)
-    # Format plot
-    plt.title('Heartbeat over time')
-    plt.ylabel('IR Value')
-    sample += 1
-    
+def animate(i, ys):
+	# Read IR from MAX3010x
+	ir = sensor.getIR()
+	
+	ys.append(ir)
+	ys = ys[-xlen:]
+	line.set_ydata(ys)
+	ax.set_ylim([min(ys),max(ys)])
+	
+	return line,
+
+
 def runExample():
 
 	print("\nSparkFun MAX3010x Photodetector - Example 4\n")
@@ -139,7 +136,7 @@ def runExample():
 	else:
 		print("Setup complete.")
 	# Set up plot to call animate() function periodically
-	ani = animation.FuncAnimation(fig, animate, fargs=(xs, ys), interval=40)
+	ani = animation.FuncAnimation(fig, animate, fargs=(ys,), interval=10, blit=True)
 	plt.show()
 
 
