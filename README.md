@@ -20,7 +20,7 @@ Qwiic_MAX3010x_Py
 	
 </p>
 
-<img src="https://cdn.sparkfun.com//assets/parts/1/5/3/3/8/16474-SparkFun_Particle_Sensor_Breakout_-_MAX30101__Qwiic_-01.jpg"  align="right" width=300 alt="SparkFun Photodetector Breakout - MAX30101 (Qwiic)">
+<img src="https://cdn.sparkfun.com//assets/parts/1/5/3/3/8/16474-SparkFun_Photodetector_Breakout_-_MAX30101__Qwiic_-01.jpg"  align="right" width=300 alt="SparkFun Photodetector Breakout - MAX30101 (Qwiic)">
 
 Python package for the [SparkFun Photodetector Breakout - MAX30101 (Qwiic)](https://www.sparkfun.com/products/16474)
 
