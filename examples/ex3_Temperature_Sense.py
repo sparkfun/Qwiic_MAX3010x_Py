@@ -48,7 +48,6 @@
 # Example 3
 #
 
-from __future__ import print_function
 import qwiic_max3010x
 import time
 import sys
@@ -82,8 +81,8 @@ def runExample():
 			temperature = sensor.readTemperature()
 			temperatureF = sensor.readTemperatureF()
 
-			temperature = round(temperature, 4)
-			temperatureF = round(temperatureF, 4)
+			temperature = round(temperature, 2)
+			temperatureF = round(temperatureF, 2)
 
 			print(\
 			 'temperatureC[', temperature , '] \t',\

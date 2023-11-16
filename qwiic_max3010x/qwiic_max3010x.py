@@ -64,12 +64,8 @@ New to qwiic? Take a look at the entire [SparkFun qwiic ecosystem](https://www.s
 
 """
 #-----------------------------------------------------------------------------
-from __future__ import print_function
-import struct
 import qwiic_i2c
 import time
-from smbus2 import SMBus, i2c_msg
-_i2c_msg = i2c_msg
 
 from . import heart_rate
 hr = heart_rate.HeartRate()
@@ -1077,14 +1073,22 @@ class QwiicMax3010x(object):
             #We now have the number of samples, now calc bytes to read
             bytesToRead = numberOfSamples * self.activeLEDs * 3
 
-            # Send command to prepare to read the FIFODATA location from sensor
-            self._i2c.writeCommand(self.address, MAX30105_FIFODATA)
+            # We may need to read as many as 288 bytes (32 * 3 * 3), but not all
+            # platforms can read that much in one go. So we read in blocks until
+            # we reach the end.
+            maxReadSize = 32
+            buff = []
+            while bytesToRead > 0:
+                # Compute how many bytes we need to read in this loop iteration
+                bytesToReadThisTime = bytesToRead
+                if bytesToReadThisTime > maxReadSize:
+                    bytesToReadThisTime = maxReadSize
+                
+                # Update number of bytes remaining
+                bytesToRead -= bytesToReadThisTime
 
-            # Block Read (>32 bytes) bytesToRead from the sensor
-            with SMBus(1) as bus:
-                msg = i2c_msg.read(self.address, bytesToRead)
-                bus.i2c_rdwr(msg)
-            buff = list(msg)
+                # Read from FIFO and append to buffer
+                buff += self._i2c.readBlock(self.address, MAX30105_FIFODATA, bytesToReadThisTime)
             
             # Grab all the bytes we just read into buff, and plug them into the correct local variables.
             # Note, we need to keep track of where we are in the buff (using sampleNumber and buffIndex "i")
