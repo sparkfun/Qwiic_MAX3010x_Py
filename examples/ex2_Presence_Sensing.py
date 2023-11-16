@@ -47,7 +47,6 @@
 # Example 2
 #
 
-from __future__ import print_function
 import qwiic_max3010x
 import time
 import sys
