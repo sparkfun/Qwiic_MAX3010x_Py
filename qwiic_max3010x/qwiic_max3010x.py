@@ -64,7 +64,6 @@ New to qwiic? Take a look at the entire [SparkFun qwiic ecosystem](https://www.s
 
 """
 #-----------------------------------------------------------------------------
-import struct
 import qwiic_i2c
 import time
 

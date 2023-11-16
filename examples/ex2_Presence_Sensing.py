@@ -51,8 +51,15 @@ import qwiic_max3010x
 import time
 import sys
 
-def millis():
-	return int(round(time.time() * 1000))
+# Define a function to get milliseconds. This depends on the platform
+if hasattr(time, "ticks_ms"):
+	# MicroPython: time.time() gives an integer, have to instead use ticks_ms()
+	def millis():
+		return time.ticks_ms()
+else:
+	# Other platforms: time.time() gives a float
+	def millis():
+		return int(round(time.time() * 1000))
 
 def runExample():
 
