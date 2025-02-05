@@ -23,7 +23,7 @@ This repository implements a Python package for the SparkFun Qwiic MAX3010X. Thi
 
 ## About the Package
 
-This python package enables the user to access the features of the MAX3010X via a single Qwiic cable. This includes <reading IR measurements, reading green measurements, sensing presense> and more. The capabilities of the MAX3010X are each demonstrated in the included examples.
+This python package enables the user to access the features of the MAX3010X via a single Qwiic cable. This includes reading IR measurements, reading green measurements, sensing presense and more. The capabilities of the MAX3010X are each demonstrated in the included examples.
 
 New to qwiic? Take a look at the entire [SparkFun qwiic ecosystem](https://www.sparkfun.com/qwiic).
 
