@@ -4,7 +4,7 @@ requires = ["setuptools"]
 [project]
 name = "sparkfun_qwiic_max3010x"
 version = "0.1.0"
-description = long_description
+description = "Sparkfun Electronics Qwiic MAX3010x Package"
 readme = "DESCRIPTION.rst"
 
 authors = [{name="Sparkfun Electronics", email="info@sparkfun.com"}]
