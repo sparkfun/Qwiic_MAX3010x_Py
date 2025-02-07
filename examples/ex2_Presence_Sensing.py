@@ -51,15 +51,13 @@ import qwiic_max3010x
 import time
 import sys
 
-# Define a function to get milliseconds. This depends on the platform
-if hasattr(time, "ticks_ms"):
-	# MicroPython: time.time() gives an integer, have to instead use ticks_ms()
+# Provide platform-dependent way to get current time in milliseconds
+if hasattr(time, "monotonic_ns"):
 	def millis():
-		return time.ticks_ms()
+		return time.monotonic_ns() // 1000000 # works in CircuitPython and Linux/Raspberry Pi
 else:
-	# Other platforms: time.time() gives a float
 	def millis():
-		return int(round(time.time() * 1000))
+		return time.time_ns() // 1000000 #only works in MicroPython
 
 def runExample():
 
