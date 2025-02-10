@@ -1,11 +1,11 @@
 {
     "urls": [
-      ["qwiic_max3010x/__init__.py", "github:sparkfun/Qwiic_MAX3010x_Py/qwiic_max3010x/__init__.py"],
-      ["qwiic_max3010x/heart_rate.py", "github:sparkfun/Qwiic_MAX3010x_Py/qwiic_max3010x/heart_rate.py"],
-      ["qwiic_max3010x/qwiic_max3010x.py", "github:sparkfun/Qwiic_MAX3010x_Py/qwiic_max3010x/qwiic_max3010x.py"]
-    ],
-    "deps": [
-      ["github:sparkfun/Qwiic_I2C_Py", "master"]
+      ["qwiic_max3010x_py_examples/ex1_Basic_Readings.py", "github:sparkfun/qwiic_max3010x_py/examples/ex1_Basic_Readings.py"],
+      ["qwiic_max3010x_py_examples/ex2_Presence_Sensing.py", "github:sparkfun/qwiic_max3010x_py/examples/ex2_Presence_Sensing.py"],
+      ["qwiic_max3010x_py_examples/ex3_Temperature_Sense.py", "github:sparkfun/qwiic_max3010x_py/examples/ex3_Temperature_Sense.py"],
+      ["qwiic_max3010x_py_examples/ex4_HeartBeat_Plotter.py", "github:sparkfun/qwiic_max3010x_py/examples/ex4_HeartBeat_Plotter.py"],
+      ["qwiic_max3010x_py_examples/ex5_HeartRate.py", "github:sparkfun/qwiic_max3010x_py/examples/ex5_HeartRate.py"],
+      ["qwiic_max3010x_py_examples/ex6_FIFO_Readings.py", "github:sparkfun/qwiic_max3010x_py/examples/ex6_FIFO_Readings.py"]
     ],
     "version": "0.1.0"
 }
